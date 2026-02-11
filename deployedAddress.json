@@ -1,0 +1,13 @@
+{
+  "43113": {
+    "network": "avax_fuji",
+    "time": "2026/2/10 17:25:52",
+    "USDC": "0xf7789450c8a0d6525f9404de77a03eb8cf133caf",
+    "StockRegistry": "0x6c4dc68e8aec2ac2139ec0622c28b61f3ea32227",
+    "StockMarket": "0xead6cbe8cf8a19fc634f0ceb8f399d80ed674dd6",
+    "Management": "0xa72dc2000d1e6d585d9e407bb18f0bfd6f93dee5",
+    "Validator": "0xee3a90d7be825b90c39d94542f3a5705ff9148be",
+    "StockFunctionsOracle": "0x47faae941a51cab13f4f264b3efd7507d87784c7",
+    "StockStreamsOracle": "0x08aa9ccbb20472f594d52c837f68b157db0d9423"
+  }
+}

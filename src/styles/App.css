@@ -1,0 +1,17 @@
+/* App Component */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding: var(--space-6) 0;
+}
+
+@media (max-width: 640px) {
+  .main-content {
+    padding: var(--space-4) 0;
+  }
+}

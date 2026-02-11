@@ -1,0 +1,322 @@
+/* StockDetail Page */
+.stock-detail-page {
+  padding: var(--space-6) 0;
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-6);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.back-button:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.back-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: var(--space-6);
+}
+
+.detail-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-light);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.detail-stock-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--accent-500) 100%);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: white;
+}
+
+.detail-title h1 {
+  font-size: 1.75rem;
+  margin-bottom: var(--space-2);
+}
+
+.detail-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.detail-symbol {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.detail-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-item {
+  min-width: 0;
+}
+
+.stat-value.price {
+  color: var(--accent-600);
+}
+
+.detail-contracts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
+}
+
+.contract-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.contract-label {
+  color: var(--text-muted);
+}
+
+.contract-value {
+  font-family: ui-monospace, monospace;
+  color: var(--text-secondary);
+}
+
+.detail-description {
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border-light);
+}
+
+.detail-description h4 {
+  font-size: 1rem;
+  margin-bottom: var(--space-3);
+}
+
+.detail-description p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* Trading Card */
+.trading-tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.trading-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.trading-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.trading-tab.active {
+  color: var(--primary-600);
+  background: var(--primary-50);
+  border-color: var(--primary-200);
+}
+
+.trading-tab svg {
+  width: 18px;
+  height: 18px;
+}
+
+.connect-prompt-small,
+.not-approved-notice {
+  text-align: center;
+  padding: var(--space-8) 0;
+}
+
+.not-approved-notice {
+  color: var(--text-muted);
+}
+
+.not-approved-notice .notice-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--bg-secondary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-4);
+  color: var(--text-muted);
+}
+
+.not-approved-notice .notice-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.trading-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.balance-info {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.estimated-receive {
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.price-update-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: var(--radius-xl);
+}
+
+.price-update-notice .notice-icon {
+  width: 48px;
+  height: 48px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-4);
+  color: #d97706;
+}
+
+.price-update-notice .notice-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.notice-content h4 {
+  font-size: 1.125rem;
+  margin-bottom: var(--space-2);
+  color: #92400e;
+}
+
+.notice-content p {
+  font-size: 0.875rem;
+  color: #a16207;
+  margin-bottom: var(--space-4);
+}
+
+.countdown {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #92400e;
+  padding: var(--space-3) var(--space-6);
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 1024px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .detail-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .detail-meta {
+    justify-content: center;
+  }
+}
