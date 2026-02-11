@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   useAccount,
   useWriteContract,
-  useWaitForTransactionReceipt,
   useBalance,
   usePublicClient,
   useReadContract,
@@ -19,6 +18,7 @@ import {
   getStatusBadgeClass,
   timeAgo,
   formatTimestamp,
+  getExplorerAddressUrl,
 } from "../config/contracts";
 import { useStock } from "../hooks/useStocks";
 import TxStatusModal from "../components/TxStatusModal";
@@ -614,22 +614,116 @@ export default function StockDetail({ stock, onBack }) {
 
             <div className="detail-contracts">
               <div className="contract-item">
-                <span className="contract-label">Token Contract</span>
-                <span className="contract-value">
+                <span className="contract-label">Stock Contract</span>
+                <a
+                  href={getExplorerAddressUrl(displayStock?.stock)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="contract-link"
+                >
                   {formatAddress(displayStock?.stock)}
-                </span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </a>
               </div>
               <div className="contract-item">
-                <span className="contract-label">Pool</span>
-                <span className="contract-value">
+                <span className="contract-label">Collateral</span>
+                <a
+                  href={getExplorerAddressUrl(displayStock?.collateral)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="contract-link"
+                >
+                  {formatAddress(displayStock?.collateral)}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </a>
+              </div>
+              <div className="contract-item">
+                <span className="contract-label">Oracle</span>
+                <a
+                  href={getExplorerAddressUrl(displayStock?.oracle)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="contract-link"
+                >
+                  {formatAddress(displayStock?.oracle)}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </a>
+              </div>
+              <div className="contract-item">
+                <span className="contract-label">Fund Pool</span>
+                <a
+                  href={getExplorerAddressUrl(displayStock?.stockFundPool)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="contract-link"
+                >
                   {formatAddress(displayStock?.stockFundPool)}
-                </span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </a>
               </div>
               <div className="contract-item">
                 <span className="contract-label">Curator</span>
-                <span className="contract-value">
+                <a
+                  href={getExplorerAddressUrl(displayStock?.curator)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="contract-link"
+                >
                   {formatAddress(displayStock?.curator)}
-                </span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </a>
+              </div>
+              <div className="contract-item">
+                <span className="contract-label">Reserve Proof</span>
+                <a
+                  href={displayStock?.proof}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="contract-link external-link"
+                >
+                  View Proof
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </a>
+              </div>
+              <div className="contract-item">
+                <span className="contract-label">Price Source</span>
+                <a
+                  href={displayStock?.priceUri}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="contract-link external-link"
+                >
+                  View Source
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </a>
               </div>
             </div>
 

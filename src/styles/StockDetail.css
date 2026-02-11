@@ -145,6 +145,41 @@
   color: var(--text-secondary);
 }
 
+.contract-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: ui-monospace, monospace;
+  color: var(--primary-600);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.contract-link:hover {
+  color: var(--primary-700);
+  text-decoration: underline;
+}
+
+.contract-link svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0.7;
+}
+
+.contract-link:hover svg {
+  opacity: 1;
+}
+
+.contract-link.external-link {
+  color: var(--accent-600);
+  font-family: inherit;
+  font-weight: 500;
+}
+
+.contract-link.external-link:hover {
+  color: var(--accent-700);
+}
+
 .detail-description {
   padding-top: var(--space-6);
   border-top: 1px solid var(--border-light);

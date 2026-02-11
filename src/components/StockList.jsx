@@ -201,7 +201,7 @@ export default function StockList({ onSelectStock, onCreateStock }) {
                     className="btn btn-accent btn-sm"
                     style={{ width: "100%" }}
                   >
-                    Trade
+                    Enter
                   </button>
                 </div>
               )}

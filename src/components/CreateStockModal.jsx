@@ -3,10 +3,24 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagm
 import { CONTRACTS, ABIS } from "../config/contracts";
 import TxStatusModal from "./TxStatusModal";
 
+// Supported collateral tokens
+const COLLATERAL_OPTIONS = [
+  { symbol: "USDC", address: CONTRACTS.USDC },
+];
+
+// Oracle options
+const ORACLE_OPTIONS = [
+  { name: "StockStreamsOracle (Main Stock)", address: CONTRACTS.StockStreamsOracle },
+  { name: "StockFunctionsOracle (Other Stock)", address: CONTRACTS.StockFunctionsOracle },
+  { name: "Custom", address: "custom" },
+];
+
 export default function CreateStockModal({ isOpen, onClose, onSuccess }) {
   const { address } = useAccount();
   const [showTxModal, setShowTxModal] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [oracleType, setOracleType] = useState("StockFunctionsOracle (Other Stock)");
+  const [customOracle, setCustomOracle] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     symbol: "",
@@ -127,10 +141,37 @@ export default function CreateStockModal({ isOpen, onClose, onSuccess }) {
       collateral: CONTRACTS.USDC,
       oracle: CONTRACTS.StockFunctionsOracle,
     });
+    setOracleType("StockFunctionsOracle (Other Stock)");
+    setCustomOracle("");
     setErrors({});
     reset();
     setShowTxModal(false);
     onClose();
+  };
+
+  const handleOracleTypeChange = (e) => {
+    const selectedName = e.target.value;
+    setOracleType(selectedName);
+    
+    const selectedOption = ORACLE_OPTIONS.find(opt => opt.name === selectedName);
+    if (selectedOption && selectedOption.address !== "custom") {
+      setFormData({ ...formData, oracle: selectedOption.address });
+      setCustomOracle("");
+    }
+  };
+
+  const handleCustomOracleChange = (e) => {
+    const value = e.target.value;
+    setCustomOracle(value);
+    setFormData({ ...formData, oracle: value });
+  };
+
+  const handleCollateralChange = (e) => {
+    const selectedSymbol = e.target.value;
+    const selectedOption = COLLATERAL_OPTIONS.find(opt => opt.symbol === selectedSymbol);
+    if (selectedOption) {
+      setFormData({ ...formData, collateral: selectedOption.address });
+    }
   };
 
   const getTxStatus = () => {
@@ -259,33 +300,58 @@ export default function CreateStockModal({ isOpen, onClose, onSuccess }) {
 
               <div className="form-group">
                 <label className="form-label">
-                  Collateral Address <span className="required">*</span>
+                  Collateral Token <span className="required">*</span>
                 </label>
-                <input
-                  type="text"
-                  className={`form-input ${errors.collateral ? "error" : ""}`}
-                  placeholder="0x..."
-                  value={formData.collateral}
-                  onChange={(e) => setFormData({ ...formData, collateral: e.target.value })}
-                />
-                {errors.collateral && <span className="error-text">{errors.collateral}</span>}
-                <span className="help-text">ERC20 token address used as collateral (default: USDC)</span>
+                <select
+                  className="form-select"
+                  value={COLLATERAL_OPTIONS.find(opt => opt.address === formData.collateral)?.symbol || "USDC"}
+                  onChange={handleCollateralChange}
+                >
+                  {COLLATERAL_OPTIONS.map((option) => (
+                    <option key={option.symbol} value={option.symbol}>
+                      {option.symbol}
+                    </option>
+                  ))}
+                </select>
+                <span className="help-text">Select collateral token for this stock</span>
               </div>
 
               <div className="form-group">
                 <label className="form-label">
-                  Oracle Address <span className="required">*</span>
+                  Oracle Type <span className="required">*</span>
                 </label>
-                <input
-                  type="text"
-                  className={`form-input ${errors.oracle ? "error" : ""}`}
-                  placeholder="0x..."
-                  value={formData.oracle}
-                  onChange={(e) => setFormData({ ...formData, oracle: e.target.value })}
-                />
-                {errors.oracle && <span className="error-text">{errors.oracle}</span>}
-                <span className="help-text">Price oracle contract address</span>
+                <select
+                  className="form-select"
+                  value={oracleType}
+                  onChange={handleOracleTypeChange}
+                >
+                  {ORACLE_OPTIONS.map((option) => (
+                    <option key={option.name} value={option.name}>
+                      {option.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="help-text">
+                  Main: Real-time Pyth price feeds | Other: Chainlink Functions for custom stocks
+                </span>
               </div>
+
+              {oracleType === "Custom" && (
+                <div className="form-group">
+                  <label className="form-label">
+                    Custom Oracle Address <span className="required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className={`form-input ${errors.oracle ? "error" : ""}`}
+                    placeholder="0x..."
+                    value={customOracle}
+                    onChange={handleCustomOracleChange}
+                  />
+                  {errors.oracle && <span className="error-text">{errors.oracle}</span>}
+                  <span className="help-text">Enter custom oracle contract address</span>
+                </div>
+              )}
             </div>
 
             <div className="modal-footer">

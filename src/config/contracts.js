@@ -131,3 +131,16 @@ export const getStatusBadgeClass = (state) => {
       return "badge-draft";
   }
 };
+
+// Explorer URL
+const EXPLORER_URL = "https://testnet.snowtrace.io";
+
+export const getExplorerAddressUrl = (address) => {
+  if (!address) return "#";
+  return `${EXPLORER_URL}/address/${address}`;
+};
+
+export const getExplorerTxUrl = (hash) => {
+  if (!hash) return "#";
+  return `${EXPLORER_URL}/tx/${hash}`;
+};
