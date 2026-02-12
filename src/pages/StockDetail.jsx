@@ -15,10 +15,12 @@ import {
   formatPrice,
   formatStockState,
   formatStockType,
+  formatChangeWay,
   getStatusBadgeClass,
   timeAgo,
   formatTimestamp,
   getExplorerAddressUrl,
+  DON_ID,
 } from "../config/contracts";
 import { useStock } from "../hooks/useStocks";
 import TxStatusModal from "../components/TxStatusModal";
@@ -61,6 +63,23 @@ export default function StockDetail({ stock, onBack }) {
   const [txHash, setTxHash] = useState(null);
   const [txError, setTxError] = useState(null);
 
+  // Update Reserve modal state
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Change Request modal state
+  const [showChangeRequestModal, setShowChangeRequestModal] = useState(false);
+  const [isSendingChangeRequest, setIsSendingChangeRequest] = useState(false);
+  const [selectedChangeWay, setSelectedChangeWay] = useState(0);
+  const [changeRequestValue, setChangeRequestValue] = useState("");
+  const [changeRequestAddress, setChangeRequestAddress] = useState("");
+
+  // Initial Issue modal state
+  const [showInitialIssueModal, setShowInitialIssueModal] = useState(false);
+  const [isInitialIssuing, setIsInitialIssuing] = useState(false);
+  const [initialIssueAmount, setInitialIssueAmount] = useState("");
+  const [initialIssueError, setInitialIssueError] = useState("");
+
   // For Other stocks - waiting for oracle
   const [oracleRequestSent, setOracleRequestSent] = useState(false);
   const [countdown, setCountdown] = useState(30);
@@ -81,13 +100,16 @@ export default function StockDetail({ stock, onBack }) {
     query: { enabled: !!address },
   });
 
-  // Get oracle fee for Other stocks
-  const { data: oracleFee } = useReadContract({
-    address: CONTRACTS.StockMarket,
-    abi: ABIS.StockMarket,
-    functionName: "oracleFee",
-    query: { enabled: displayStock?.stockType === 1 },
+  // Get fee info from Management (contains oracleFee, changeFee, mintFeeRate, redeemFeeRate)
+  const { data: feeInfo } = useReadContract({
+    address: CONTRACTS.Management,
+    abi: ABIS.Management,
+    functionName: "getFeeInfo",
+    query: { enabled: !!CONTRACTS.Management },
   });
+
+  // Extract oracle fee from feeInfo
+  const oracleFee = feeInfo?.oracleFee;
 
   // Get signer nonce for Other stocks
   const { data: signerNonce, refetch: refetchNonce } = useReadContract({
@@ -109,11 +131,25 @@ export default function StockDetail({ stock, onBack }) {
     useWriteContract();
   const { writeContract: redeemCall, isPending: isRedeeming } =
     useWriteContract();
+  const { writeContract: updateCall, isPending: isUpdatePending } =
+    useWriteContract();
+  const {
+    writeContract: sendChangeRequestCall,
+    isPending: isChangeRequestPending,
+  } = useWriteContract();
+  const { writeContract: initialIssueCall, isPending: isInitialIssuePending } =
+    useWriteContract();
 
   // For approval pending state
   const [isApproving, setIsApproving] = useState(false);
   const pendingIssueParamsRef = useRef(null);
   const pendingIssueTypeRef = useRef(null); // 'main' or 'other'
+
+  // Check if current user is the curator
+  const isCurator =
+    address &&
+    displayStock?.curator &&
+    address.toLowerCase() === displayStock.curator.toLowerCase();
 
   // Countdown timer for Other stocks
   useEffect(() => {
@@ -513,6 +549,182 @@ export default function StockDetail({ stock, onBack }) {
     }, 300);
   };
 
+  // Handle Update Reserve (Validator.update)
+  const handleUpdateReserve = async () => {
+    try {
+      setIsUpdating(true);
+      setTxStatus("pending");
+      setTxHash(null);
+      setTxError(null);
+      setShowTxModal(true);
+      setShowUpdateModal(false);
+
+      updateCall(
+        {
+          address: CONTRACTS.Validator,
+          abi: ABIS.Validator,
+          functionName: "update",
+          args: [
+            BigInt(displayStock.id),
+            BigInt(CHAINLINK_CONFIG.subscriptionId),
+            Number(CHAINLINK_CONFIG.gasLimit), // uint32
+            DON_ID,
+          ],
+          value: CHAINLINK_CONFIG.updateFee || 0n,
+        },
+        {
+          onSuccess: (hash) => {
+            setTxHash(hash);
+            setTxStatus("confirming");
+          },
+          onError: (error) => {
+            setTxError(error.message);
+            setTxStatus("error");
+          },
+        },
+      );
+    } catch (err) {
+      setTxError(err.message);
+      setTxStatus("error");
+      setShowTxModal(true);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Handle Send Change Request (Management.sendChangeRequest)
+  const handleSendChangeRequest = async () => {
+    try {
+      setIsSendingChangeRequest(true);
+      setTxStatus("pending");
+      setTxHash(null);
+      setTxError(null);
+      setShowTxModal(true);
+      setShowChangeRequestModal(false);
+
+      const newOracle =
+        selectedChangeWay === 5
+          ? changeRequestAddress
+          : "0x0000000000000000000000000000000000000000";
+      const newStringInfo = selectedChangeWay !== 5 ? changeRequestValue : "";
+
+      // Get change fee from contract
+      const feeInfo = await publicClient.readContract({
+        address: CONTRACTS.Management,
+        abi: ABIS.Management,
+        functionName: "getFeeInfo",
+      });
+
+      sendChangeRequestCall(
+        {
+          address: CONTRACTS.Management,
+          abi: ABIS.Management,
+          functionName: "sendChangeRequest",
+          args: [
+            selectedChangeWay,
+            BigInt(displayStock.id),
+            newOracle,
+            newStringInfo,
+          ],
+          value: feeInfo?.changeFee || 0n,
+        },
+        {
+          onSuccess: (hash) => {
+            setTxHash(hash);
+            setTxStatus("confirming");
+          },
+          onError: (error) => {
+            setTxError(error.message);
+            setTxStatus("error");
+          },
+        },
+      );
+    } catch (err) {
+      setTxError(err.message);
+      setTxStatus("error");
+      setShowTxModal(true);
+    } finally {
+      setIsSendingChangeRequest(false);
+    }
+  };
+
+  // Get change way label
+  const getChangeWayLabel = (way) => {
+    switch (Number(way)) {
+      case 0:
+        return "New Stock Name";
+      case 1:
+        return "New Stock Symbol";
+      case 2:
+        return "New Description";
+      case 3:
+        return "New Reserve Proof URL";
+      case 4:
+        return "New Price Source URL";
+      case 5:
+        return "New Oracle Address";
+      default:
+        return "Value";
+    }
+  };
+
+  // Handle Initial Issue - only for curator
+  const handleInitialIssue = async () => {
+    try {
+      setInitialIssueError("");
+      
+      // Validate amount
+      if (!initialIssueAmount || Number(initialIssueAmount) <= 0) {
+        setInitialIssueError("Please enter a valid amount");
+        return;
+      }
+
+      // Check if amount exceeds reserve
+      const amount = Number(initialIssueAmount);
+      const reserve = Number(displayStock?.reserve || 0);
+      if (amount > reserve) {
+        setInitialIssueError(`Amount cannot exceed reserve (${formatNumber(reserve)})`);
+        return;
+      }
+
+      setIsInitialIssuing(true);
+      setTxStatus("pending");
+      setTxHash(null);
+      setTxError(null);
+      setShowTxModal(true);
+      setShowInitialIssueModal(false);
+
+      // Parse amount with stock decimals
+      const issueAmount = parseUnits(initialIssueAmount, displayStock?.decimals || 18);
+
+      initialIssueCall(
+        {
+          address: CONTRACTS.StockMarket,
+          abi: ABIS.StockMarket,
+          functionName: "initialIssue",
+          args: [BigInt(displayStock.id), issueAmount],
+        },
+        {
+          onSuccess: (hash) => {
+            setTxHash(hash);
+            setTxStatus("confirming");
+            setInitialIssueAmount("");
+          },
+          onError: (error) => {
+            setTxError(error.message);
+            setTxStatus("error");
+          },
+        }
+      );
+    } catch (err) {
+      setTxError(err.message);
+      setTxStatus("error");
+      setShowTxModal(true);
+    } finally {
+      setIsInitialIssuing(false);
+    }
+  };
+
   // Check if transaction is confirming/success
   useEffect(() => {
     if (txHash && txStatus === "confirming") {
@@ -537,11 +749,77 @@ export default function StockDetail({ stock, onBack }) {
 
   const isMain = displayStock?.stockType === 1;
 
-  const estimatedTokens =
-    mintAmount && displayStock?.price
-      ? (Number(mintAmount) / (Number(displayStock.price) / 1e18)).toFixed(6)
-      : "0";
+  // Get update fee from Validator
+  const { data: updateFee } = useReadContract({
+    address: CONTRACTS.Validator,
+    abi: ABIS.Validator,
+    functionName: "updateFee",
+    query: { enabled: !!CONTRACTS.Validator },
+  });
 
+  // Get estimated token amount for Main stock
+  const [estimatedTokens, setEstimatedTokens] = useState("0");
+  useEffect(() => {
+    const fetchEstimatedTokens = async () => {
+      if (!mintAmount) {
+        setEstimatedTokens("0");
+        return;
+      }
+      try {
+        if (isMain) {
+          // Main stock: use getIssueAmount
+          const collateralDecimals = await publicClient.readContract({
+            address: displayStock.collateral,
+            abi: ABIS.ERC20,
+            functionName: "decimals",
+          });
+          const collateralAmount = parseUnits(mintAmount, collateralDecimals);
+          const amount = await publicClient.readContract({
+            address: CONTRACTS.StockMarket,
+            abi: ABIS.StockMarket,
+            functionName: "getIssueAmount",
+            args: [BigInt(displayStock.id), collateralAmount],
+          });
+          setEstimatedTokens(formatUnits(amount, displayStock.decimals || 18));
+        } else {
+          // Other stock: use getIssueOtherStockAmount with spot=1000 (10%)
+          const collateralDecimals = await publicClient.readContract({
+            address: displayStock.collateral,
+            abi: ABIS.ERC20,
+            functionName: "decimals",
+          });
+          const collateralAmount = parseUnits(mintAmount, collateralDecimals);
+          const latestPrice = BigInt(displayStock.price || 0);
+          const amount = await publicClient.readContract({
+            address: CONTRACTS.StockMarket,
+            abi: ABIS.StockMarket,
+            functionName: "getIssueOtherStockAmount",
+            args: [
+              1000,
+              BigInt(displayStock.id),
+              latestPrice,
+              collateralAmount,
+            ],
+          });
+          setEstimatedTokens(formatUnits(amount, displayStock.decimals || 18));
+        }
+      } catch (err) {
+        console.error("Failed to get estimated tokens:", err);
+        setEstimatedTokens("0");
+      }
+    };
+    fetchEstimatedTokens();
+  }, [
+    mintAmount,
+    displayStock?.id,
+    displayStock?.price,
+    displayStock?.collateral,
+    displayStock?.decimals,
+    isMain,
+    publicClient,
+  ]);
+
+  // Get estimated USDC amount for redeem (using price as approximation)
   const estimatedUsdc =
     redeemAmount && displayStock?.price
       ? (Number(redeemAmount) * (Number(displayStock.price) / 1e18)).toFixed(2)
@@ -600,9 +878,31 @@ export default function StockDetail({ stock, onBack }) {
               </div>
               <div className="stat-item">
                 <span className="stat-label">Reserve</span>
-                <span className="stat-value">
-                  ${formatNumber(displayStock?.reserve)}
-                </span>
+                <div className="stat-value-with-action">
+                  <span className="stat-value">
+                    ${formatNumber(displayStock?.reserve)}
+                  </span>
+                  {isConnected && (
+                    <button
+                      type="button"
+                      className="stat-action-btn"
+                      onClick={() => {
+                        console.log("Update Reserve button clicked");
+                        setShowUpdateModal(true);
+                      }}
+                      title="Update Reserve"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="stat-item">
                 <span className="stat-label">Updated (Shanghai)</span>
@@ -622,7 +922,12 @@ export default function StockDetail({ stock, onBack }) {
                   className="contract-link"
                 >
                   {formatAddress(displayStock?.stock)}
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                     <polyline points="15 3 21 3 21 9" />
                     <line x1="10" y1="14" x2="21" y2="3" />
@@ -638,7 +943,12 @@ export default function StockDetail({ stock, onBack }) {
                   className="contract-link"
                 >
                   {formatAddress(displayStock?.collateral)}
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                     <polyline points="15 3 21 3 21 9" />
                     <line x1="10" y1="14" x2="21" y2="3" />
@@ -654,7 +964,12 @@ export default function StockDetail({ stock, onBack }) {
                   className="contract-link"
                 >
                   {formatAddress(displayStock?.oracle)}
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                     <polyline points="15 3 21 3 21 9" />
                     <line x1="10" y1="14" x2="21" y2="3" />
@@ -670,7 +985,12 @@ export default function StockDetail({ stock, onBack }) {
                   className="contract-link"
                 >
                   {formatAddress(displayStock?.stockFundPool)}
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                     <polyline points="15 3 21 3 21 9" />
                     <line x1="10" y1="14" x2="21" y2="3" />
@@ -686,7 +1006,12 @@ export default function StockDetail({ stock, onBack }) {
                   className="contract-link"
                 >
                   {formatAddress(displayStock?.curator)}
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                     <polyline points="15 3 21 3 21 9" />
                     <line x1="10" y1="14" x2="21" y2="3" />
@@ -702,7 +1027,12 @@ export default function StockDetail({ stock, onBack }) {
                   className="contract-link external-link"
                 >
                   View Proof
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                     <polyline points="15 3 21 3 21 9" />
                     <line x1="10" y1="14" x2="21" y2="3" />
@@ -718,7 +1048,12 @@ export default function StockDetail({ stock, onBack }) {
                   className="contract-link external-link"
                 >
                   View Source
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                     <polyline points="15 3 21 3 21 9" />
                     <line x1="10" y1="14" x2="21" y2="3" />
@@ -731,6 +1066,65 @@ export default function StockDetail({ stock, onBack }) {
               <div className="detail-description">
                 <h4>About</h4>
                 <p>{displayStock.describe}</p>
+              </div>
+            )}
+
+            {/* Curator Management Section - Only for Curator */}
+            {isCurator && (
+              <div className="curator-management">
+                <h4>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                  </svg>
+                  Curator Management
+                </h4>
+                <div className="curator-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      console.log("Initial Issue button clicked");
+                      setInitialIssueAmount("");
+                      setInitialIssueError("");
+                      setShowInitialIssueModal(true);
+                    }}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Initial Issue
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      console.log("Change Request button clicked");
+                      setShowChangeRequestModal(true);
+                    }}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                    Send Change Request
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -868,6 +1262,12 @@ export default function StockDetail({ stock, onBack }) {
                               {displayStock?.symbol}
                             </span>
                           </div>
+                          <div className="fee-info-row">
+                            <span className="fee-label">Mint Fee Rate:</span>
+                            <span className="fee-value">
+                              {feeInfo?.mintFeeRate ? (Number(feeInfo.mintFeeRate) / 100).toFixed(2) : "0"}%
+                            </span>
+                          </div>
                           <button
                             className="btn btn-accent btn-lg"
                             style={{ width: "100%" }}
@@ -923,6 +1323,12 @@ export default function StockDetail({ stock, onBack }) {
                           You will receive: ${formatNumber(estimatedUsdc)} USDC
                         </span>
                       </div>
+                      <div className="fee-info-row">
+                        <span className="fee-label">Redeem Fee Rate:</span>
+                        <span className="fee-value">
+                          {feeInfo?.redeemFeeRate ? (Number(feeInfo.redeemFeeRate) / 100).toFixed(2) : "0"}%
+                        </span>
+                      </div>
                       <button
                         className="btn btn-primary btn-lg"
                         style={{ width: "100%" }}
@@ -942,6 +1348,394 @@ export default function StockDetail({ stock, onBack }) {
           </div>
         </div>
       </div>
+
+      {/* Update Reserve Modal */}
+      {showUpdateModal && (
+        <div
+          className="modal-overlay visible"
+          onClick={() => setShowUpdateModal(false)}
+        >
+          <div
+            className="modal-content curator-modal visible"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3" />
+                </svg>
+                Update Reserve
+              </h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowUpdateModal(false)}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="info-box info-box-primary">
+                <div className="info-box-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                </div>
+                <div className="info-box-content">
+                  <p>
+                    This will trigger a Chainlink Functions request to fetch the
+                    latest reserve data for{" "}
+                    <strong>{displayStock?.symbol}</strong>. A small fee is
+                    required.
+                  </p>
+                </div>
+              </div>
+              <div className="curator-info-list">
+                <div className="curator-info-item">
+                  <span className="curator-info-label">Stock ID</span>
+                  <span className="curator-info-value">
+                    #{displayStock?.id}
+                  </span>
+                </div>
+                <div className="curator-info-item">
+                  <span className="curator-info-label">Current Reserve</span>
+                  <span className="curator-info-value">
+                    ${formatNumber(displayStock?.reserve)}
+                  </span>
+                </div>
+                <div className="curator-info-item">
+                  <span className="curator-info-label">Last Updated</span>
+                  <span className="curator-info-value">
+                    {timeAgo(displayStock?.lastUpdateTime)}
+                  </span>
+                </div>
+                <div className="curator-info-item fee-item">
+                  <span className="curator-info-label">Update Fee</span>
+                  <span className="curator-info-value fee-value">
+                    {updateFee ? formatUnits(updateFee, 18) : "0"} AVAX
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowUpdateModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleUpdateReserve}
+                disabled={isUpdatePending || isUpdating}
+              >
+                {(isUpdatePending || isUpdating) && (
+                  <div className="spinner spinner-sm"></div>
+                )}
+                Confirm Update
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Request Modal */}
+      {showChangeRequestModal && (
+        <div
+          className="modal-overlay visible"
+          onClick={() => setShowChangeRequestModal(false)}
+        >
+          <div
+            className="modal-content curator-modal visible"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Send Change Request
+              </h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowChangeRequestModal(false)}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="info-box info-box-accent">
+                <div className="info-box-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                </div>
+                <div className="info-box-content">
+                  <p>
+                    Submit a request to change stock information. A change fee
+                    will be applied. Changes require approval from management.
+                  </p>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Change Type</label>
+                <select
+                  className="form-select"
+                  value={selectedChangeWay}
+                  onChange={(e) => {
+                    setSelectedChangeWay(Number(e.target.value));
+                    setChangeRequestValue("");
+                    setChangeRequestAddress("");
+                  }}
+                >
+                  <option value={0}>Name</option>
+                  <option value={1}>Symbol</option>
+                  <option value={2}>Describe</option>
+                  <option value={3}>Proof</option>
+                  <option value={4}>PriceURI</option>
+                  <option value={5}>Oracle</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  {getChangeWayLabel(selectedChangeWay)}
+                </label>
+                {selectedChangeWay === 5 ? (
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="0x..."
+                    value={changeRequestAddress}
+                    onChange={(e) => setChangeRequestAddress(e.target.value)}
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder={`Enter new ${getChangeWayLabel(selectedChangeWay).toLowerCase()}...`}
+                    value={changeRequestValue}
+                    onChange={(e) => setChangeRequestValue(e.target.value)}
+                  />
+                )}
+              </div>
+
+              <div className="curator-info-list">
+                <div className="curator-info-item">
+                  <span className="curator-info-label">Stock</span>
+                  <span className="curator-info-value">
+                    {displayStock?.symbol} (#{displayStock?.id})
+                  </span>
+                </div>
+                <div className="curator-info-item">
+                  <span className="curator-info-label">Change Type</span>
+                  <span className="curator-info-value">
+                    {formatChangeWay(selectedChangeWay)}
+                  </span>
+                </div>
+                <div className="curator-info-item fee-item">
+                  <span className="curator-info-label">Change Fee</span>
+                  <span className="curator-info-value fee-value">
+                    {feeInfo?.changeFee
+                      ? formatUnits(feeInfo.changeFee, 6)
+                      : "0"}{" "}
+                    USDC
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowChangeRequestModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-accent"
+                onClick={handleSendChangeRequest}
+                disabled={
+                  isChangeRequestPending ||
+                  isSendingChangeRequest ||
+                  (selectedChangeWay === 5
+                    ? !changeRequestAddress
+                    : !changeRequestValue)
+                }
+              >
+                {(isChangeRequestPending || isSendingChangeRequest) && (
+                  <div className="spinner spinner-sm"></div>
+                )}
+                Send Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Initial Issue Modal */}
+      {showInitialIssueModal && (
+        <div
+          className="modal-overlay visible"
+          onClick={() => setShowInitialIssueModal(false)}
+        >
+          <div
+            className="modal-content curator-modal visible"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Initial Issue
+              </h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowInitialIssueModal(false)}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="info-box info-box-accent">
+                <div className="info-box-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                </div>
+                <div className="info-box-content">
+                  <p>
+                    Initial issue allows the curator to mint tokens before the stock
+                    is approved. The amount cannot exceed the total reserve.
+                  </p>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Issue Amount</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  placeholder="0.00"
+                  value={initialIssueAmount}
+                  onChange={(e) => {
+                    setInitialIssueAmount(e.target.value);
+                    setInitialIssueError("");
+                  }}
+                />
+                {initialIssueError && (
+                  <div className="form-error">{initialIssueError}</div>
+                )}
+              </div>
+
+              <div className="curator-info-list">
+                <div className="curator-info-item">
+                  <span className="curator-info-label">Stock</span>
+                  <span className="curator-info-value">
+                    {displayStock?.symbol} (#{displayStock?.id})
+                  </span>
+                </div>
+                <div className="curator-info-item">
+                  <span className="curator-info-label">Total Reserve</span>
+                  <span className="curator-info-value">
+                    {formatNumber(displayStock?.reserve)}
+                  </span>
+                </div>
+                <div className="curator-info-item">
+                  <span className="curator-info-label">Max Issue Amount</span>
+                  <span className="curator-info-value">
+                    {formatNumber(displayStock?.reserve)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowInitialIssueModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-accent"
+                onClick={handleInitialIssue}
+                disabled={
+                  isInitialIssuePending ||
+                  isInitialIssuing ||
+                  !initialIssueAmount
+                }
+              >
+                {(isInitialIssuePending || isInitialIssuing) && (
+                  <div className="spinner spinner-sm"></div>
+                )}
+                Confirm Issue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <TxStatusModal
         isOpen={showTxModal}

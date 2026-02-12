@@ -76,6 +76,31 @@ export function useStocks() {
             console.warn(`Failed to get price for stock ${i}:`, err);
           }
 
+          // Get reserve info from Validator
+          let reserve = "0";
+          let reserveState = 0;
+          let reserveUpdateTime = 0;
+          try {
+            const reserveInfo = await publicClient.readContract({
+              address: CONTRACTS.Validator,
+              abi: ABIS.Validator,
+              functionName: "getReserveInfo",
+              args: [BigInt(i)],
+            });
+            // reserveInfo: [state, updateTime, latestReserve]
+            reserveState = Number(reserveInfo.state);
+            reserveUpdateTime = Number(reserveInfo.updateTime);
+            // latestReserve is uint128, need to format with collateral decimals
+            const collateralDecimals = await publicClient.readContract({
+              address: stockInfo.collateral,
+              abi: ABIS.ERC20,
+              functionName: "decimals",
+            });
+            reserve = (Number(reserveInfo.latestReserve) / Math.pow(10, collateralDecimals)).toString();
+          } catch (err) {
+            console.warn(`Failed to get reserve for stock ${i}:`, err);
+          }
+
           stockList.push({
             id: i,
             name: stockInfo.name,
@@ -93,7 +118,9 @@ export function useStocks() {
             totalSupply,
             decimals,
             price,
-            reserve: "0",
+            reserve,
+            reserveState,
+            reserveUpdateTime,
             lastUpdateTime,
           });
         } catch (err) {
@@ -179,6 +206,29 @@ export function useStock(stockId) {
           console.warn("Failed to get price:", err);
         }
 
+        // Get reserve info from Validator
+        let reserve = "0";
+        let reserveState = 0;
+        let reserveUpdateTime = 0;
+        try {
+          const reserveInfo = await publicClient.readContract({
+            address: CONTRACTS.Validator,
+            abi: ABIS.Validator,
+            functionName: "getReserveInfo",
+            args: [BigInt(stockId)],
+          });
+          reserveState = Number(reserveInfo.state);
+          reserveUpdateTime = Number(reserveInfo.updateTime);
+          const collateralDecimals = await publicClient.readContract({
+            address: stockInfo.collateral,
+            abi: ABIS.ERC20,
+            functionName: "decimals",
+          });
+          reserve = (Number(reserveInfo.latestReserve) / Math.pow(10, collateralDecimals)).toString();
+        } catch (err) {
+          console.warn("Failed to get reserve:", err);
+        }
+
         setStock({
           id: stockId,
           name: stockInfo.name,
@@ -196,7 +246,9 @@ export function useStock(stockId) {
           totalSupply,
           decimals,
           price,
-          reserve: "0",
+          reserve,
+          reserveState,
+          reserveUpdateTime,
           lastUpdateTime,
         });
       } catch (err) {

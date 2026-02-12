@@ -81,4 +81,6 @@ export const CHAINLINK_CONFIG = {
   subscriptionId: 15766n,
   gasLimit: 300000,
   donID: "0x66756e2d6176616c616e6368652d66756a692d31000000000000000000000000",
+  oracleFee: 0n, // Native token fee for oracle requests
+  updateFee: 0n, // Native token fee for reserve update
 };

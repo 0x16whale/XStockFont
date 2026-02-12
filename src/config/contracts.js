@@ -4,6 +4,8 @@ import StockMarketABI from "../abis/StockMarket.json";
 import StockFunctionOracleABI from "../abis/StockFunctionOracle.json";
 import StockStreamsOracleABI from "../abis/StockStreamsOracle.json";
 import ERC20ABI from "../abis/ERC20.json";
+import ValidatorABI from "../abis/Validator.json";
+import ManagementABI from "../abis/Management.json";
 
 // Fuji Testnet Chain ID
 export const FUJI_CHAIN_ID = 43113;
@@ -15,6 +17,8 @@ export const CONTRACTS = {
   StockFunctionsOracle: deployedAddress[FUJI_CHAIN_ID].StockFunctionsOracle,
   StockStreamsOracle: deployedAddress[FUJI_CHAIN_ID].StockStreamsOracle,
   USDC: deployedAddress[FUJI_CHAIN_ID].USDC,
+  Validator: deployedAddress[FUJI_CHAIN_ID].Validator,
+  Management: deployedAddress[FUJI_CHAIN_ID].Management,
 };
 
 // Contract ABIs
@@ -24,6 +28,8 @@ export const ABIS = {
   StockFunctionsOracle: StockFunctionOracleABI.abi,
   StockStreamsOracle: StockStreamsOracleABI.abi,
   ERC20: ERC20ABI.abi,
+  Validator: ValidatorABI.abi,
+  Management: ManagementABI.abi,
 };
 
 // Stock State Enum
@@ -32,6 +38,20 @@ export const StockState = {
   1: "Review",
   2: "Approved",
   3: "Paused",
+};
+
+// ChangeWay Enum (for Management.sendChangeRequest)
+export const ChangeWay = {
+  0: "ChangeName",
+  1: "ChangeSymbol", 
+  2: "ChangeDescribe",
+  3: "ChangeProof",
+  4: "ChangePriceURI",
+  5: "ChangeOracle",
+};
+
+export const formatChangeWay = (way) => {
+  return ChangeWay[way] || "Unknown";
 };
 
 // Stock Type Enum
@@ -144,3 +164,6 @@ export const getExplorerTxUrl = (hash) => {
   if (!hash) return "#";
   return `${EXPLORER_URL}/tx/${hash}`;
 };
+
+// Chainlink Functions DON ID for Fuji
+export const DON_ID = "0x66756e2d6176616c616e6368652d66756a692d31000000000000000000000000";
