@@ -672,7 +672,7 @@ export default function StockDetail({ stock, onBack }) {
   const handleInitialIssue = async () => {
     try {
       setInitialIssueError("");
-      
+
       // Validate amount
       if (!initialIssueAmount || Number(initialIssueAmount) <= 0) {
         setInitialIssueError("Please enter a valid amount");
@@ -683,7 +683,9 @@ export default function StockDetail({ stock, onBack }) {
       const amount = Number(initialIssueAmount);
       const reserve = Number(displayStock?.reserve || 0);
       if (amount > reserve) {
-        setInitialIssueError(`Amount cannot exceed reserve (${formatNumber(reserve)})`);
+        setInitialIssueError(
+          `Amount cannot exceed reserve (${formatNumber(reserve)})`,
+        );
         return;
       }
 
@@ -695,7 +697,10 @@ export default function StockDetail({ stock, onBack }) {
       setShowInitialIssueModal(false);
 
       // Parse amount with stock decimals
-      const issueAmount = parseUnits(initialIssueAmount, displayStock?.decimals || 18);
+      const issueAmount = parseUnits(
+        initialIssueAmount,
+        displayStock?.decimals || 18,
+      );
 
       initialIssueCall(
         {
@@ -714,7 +719,7 @@ export default function StockDetail({ stock, onBack }) {
             setTxError(error.message);
             setTxStatus("error");
           },
-        }
+        },
       );
     } catch (err) {
       setTxError(err.message);
@@ -1221,16 +1226,47 @@ export default function StockDetail({ stock, onBack }) {
                                 </button>
                               )
                             ) : (
-                              <button
-                                className="btn btn-primary"
-                                onClick={handleSendRequest}
-                                disabled={isSendingRequest}
-                              >
-                                {isSendingRequest && (
-                                  <div className="spinner spinner-sm"></div>
-                                )}
-                                Send Oracle Request
-                              </button>
+                              <>
+                                <div
+                                  className="fee-info-row"
+                                  style={{
+                                    marginBottom: "10px",
+                                    marginTop: "5px",
+                                    justifyContent: "flex-start",
+                                    fontSize: "0.9rem",
+                                  }}
+                                >
+                                  <span
+                                    className="fee-label"
+                                    style={{
+                                      marginRight: "8px",
+                                      color: "#f3b9b9",
+                                    }}
+                                  >
+                                    Oracle Fee:
+                                  </span>
+                                  <span
+                                    className="fee-value"
+                                    style={{ fontWeight: "600", color: "#f3b9b9", }}
+                                  >
+                                    {oracleFee
+                                      ? formatUnits(oracleFee, 18)
+                                      : "0"}{" "}
+                                    AVAX
+                                  </span>
+                                </div>
+
+                                <button
+                                  className="btn btn-primary"
+                                  onClick={handleSendRequest}
+                                  disabled={isSendingRequest}
+                                >
+                                  {isSendingRequest && (
+                                    <div className="spinner spinner-sm"></div>
+                                  )}
+                                  Send Oracle Request
+                                </button>
+                              </>
                             )}
                           </div>
                         </div>
@@ -1265,7 +1301,10 @@ export default function StockDetail({ stock, onBack }) {
                           <div className="fee-info-row">
                             <span className="fee-label">Mint Fee Rate:</span>
                             <span className="fee-value">
-                              {feeInfo?.mintFeeRate ? (Number(feeInfo.mintFeeRate) / 100).toFixed(2) : "0"}%
+                              {feeInfo?.mintFeeRate
+                                ? (Number(feeInfo.mintFeeRate) / 100).toFixed(2)
+                                : "0"}
+                              %
                             </span>
                           </div>
                           <button
@@ -1326,7 +1365,10 @@ export default function StockDetail({ stock, onBack }) {
                       <div className="fee-info-row">
                         <span className="fee-label">Redeem Fee Rate:</span>
                         <span className="fee-value">
-                          {feeInfo?.redeemFeeRate ? (Number(feeInfo.redeemFeeRate) / 100).toFixed(2) : "0"}%
+                          {feeInfo?.redeemFeeRate
+                            ? (Number(feeInfo.redeemFeeRate) / 100).toFixed(2)
+                            : "0"}
+                          %
                         </span>
                       </div>
                       <button
@@ -1578,9 +1620,9 @@ export default function StockDetail({ stock, onBack }) {
                   <span className="curator-info-label">Change Fee</span>
                   <span className="curator-info-value fee-value">
                     {feeInfo?.changeFee
-                      ? formatUnits(feeInfo.changeFee, 6)
+                      ? formatUnits(feeInfo.changeFee, 18)
                       : "0"}{" "}
-                    USDC
+                    AVAX
                   </span>
                 </div>
               </div>
@@ -1667,8 +1709,9 @@ export default function StockDetail({ stock, onBack }) {
                 </div>
                 <div className="info-box-content">
                   <p>
-                    Initial issue allows the curator to mint tokens before the stock
-                    is approved. The amount cannot exceed the total reserve.
+                    Initial issue allows the curator to mint tokens before the
+                    stock is approved. The amount cannot exceed the total
+                    reserve.
                   </p>
                 </div>
               </div>
@@ -1706,7 +1749,9 @@ export default function StockDetail({ stock, onBack }) {
                 <div className="curator-info-item">
                   <span className="curator-info-label">Max Issue Amount</span>
                   <span className="curator-info-value">
-                    {formatNumber(displayStock?.reserve)}
+                    {formatNumber(
+                      displayStock?.reserve - displayStock?.totalSupply,
+                    )}
                   </span>
                 </div>
               </div>
