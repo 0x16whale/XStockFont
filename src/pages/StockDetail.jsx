@@ -1247,7 +1247,10 @@ export default function StockDetail({ stock, onBack }) {
                                   </span>
                                   <span
                                     className="fee-value"
-                                    style={{ fontWeight: "600", color: "#f3b9b9", }}
+                                    style={{
+                                      fontWeight: "600",
+                                      color: "#f3b9b9",
+                                    }}
                                   >
                                     {oracleFee
                                       ? formatUnits(oracleFee, 18)
@@ -1467,7 +1470,7 @@ export default function StockDetail({ stock, onBack }) {
                 <div className="curator-info-item">
                   <span className="curator-info-label">Last Updated</span>
                   <span className="curator-info-value">
-                    {timeAgo(displayStock?.lastUpdateTime)}
+                    {timeAgo(displayStock?.reserveUpdateTime)}
                   </span>
                 </div>
                 <div className="curator-info-item fee-item">
