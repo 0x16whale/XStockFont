@@ -1,4 +1,4 @@
-import { encodeFunctionData, toFunctionSelector } from "viem";
+import { encodeFunctionData, parseUnits, toFunctionSelector } from "viem";
 import { ABIS } from "../config/contracts";
 
 // Encode touchPythOraclePrice for Main stocks
@@ -25,7 +25,7 @@ export function encodeSendRequest(
   bytesArgs,
   subscriptionId,
   gasLimit,
-  donID
+  donID,
 ) {
   try {
     const data = encodeFunctionData({
@@ -52,7 +52,7 @@ export function encodeSendRequest(
 // Get issueOther function selector
 export function getIssueOtherSelector() {
   return toFunctionSelector(
-    "function issueOther((uint16 spot,uint64 id,uint64 deadline,uint128 price,uint128 collateralAmount,address[] signers,bytes[] signatures))"
+    "function issueOther((uint16 spot,uint64 id,uint64 deadline,uint128 price,uint128 collateralAmount,address[] signers,bytes[] signatures))",
   );
 }
 
@@ -60,7 +60,9 @@ export function getIssueOtherSelector() {
 export function toBigIntWithDecimals(amount, decimals = 18) {
   const amountStr = amount.toString();
   const [integerPart, fractionalPart = ""] = amountStr.split(".");
-  const paddedFraction = fractionalPart.padEnd(decimals, "0").slice(0, decimals);
+  const paddedFraction = fractionalPart
+    .padEnd(decimals, "0")
+    .slice(0, decimals);
   const totalStr = integerPart + paddedFraction;
   return BigInt(totalStr);
 }
@@ -81,6 +83,6 @@ export const CHAINLINK_CONFIG = {
   subscriptionId: 15766n,
   gasLimit: 300000,
   donID: "0x66756e2d6176616c616e6368652d66756a692d31000000000000000000000000",
-  oracleFee: 0n, // Native token fee for oracle requests
+  oracleFee: parseUnits("0.001", 18), // Native token fee for oracle requests
   updateFee: 0n, // Native token fee for reserve update
 };

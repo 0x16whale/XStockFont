@@ -60,9 +60,9 @@ export function useStocks() {
             console.warn(`Failed to get token info for stock ${i}:`, err);
           }
 
+          // Fetch price from StockMarket contract getStockOracleInfo
           let price = "0";
           let lastUpdateTime = 0;
-
           try {
             const priceInfo = await publicClient.readContract({
               address: CONTRACTS.StockMarket,
@@ -73,7 +73,10 @@ export function useStocks() {
             price = priceInfo.price.toString();
             lastUpdateTime = Number(priceInfo.lastUpdateTime);
           } catch (err) {
-            console.warn(`Failed to get price for stock ${i}:`, err);
+            console.warn(`Failed to get price from contract for stock ${i}:`, err);
+            // If failed to get price, use "0" and 0
+            price = "0";
+            lastUpdateTime = 0;
           }
 
           // Get reserve info from Validator
@@ -153,7 +156,7 @@ export function useStock(stockId) {
 
   useEffect(() => {
     const fetchStock = async () => {
-      if (!publicClient || !stockId) {
+      if (!publicClient || stockId === undefined || stockId === null) {
         setIsLoading(false);
         return;
       }
@@ -192,18 +195,23 @@ export function useStock(stockId) {
           console.warn("Failed to get token info:", err);
         }
 
+        // Fetch price from StockMarket contract getStockOracleInfo
         let price = "0";
         let lastUpdateTime = 0;
         try {
           const priceInfo = await publicClient.readContract({
-            address: CONTRACTS.StockFunctionsOracle,
-            abi: ABIS.StockFunctionsOracle,
+            address: CONTRACTS.StockMarket,
+            abi: ABIS.StockMarket,
             functionName: "getStockOracleInfo",
+            args: [stockId],
           });
           price = priceInfo.price.toString();
           lastUpdateTime = Number(priceInfo.lastUpdateTime);
         } catch (err) {
-          console.warn("Failed to get price:", err);
+          console.warn(`Failed to get price from contract for stock ${stockId}:`, err);
+          // If failed to get price, use "0" and 0
+          price = "0";
+          lastUpdateTime = 0;
         }
 
         // Get reserve info from Validator

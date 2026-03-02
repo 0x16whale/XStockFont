@@ -87,6 +87,7 @@ export default function StockDetail({ stock, onBack }) {
 
   const { stock: stockDetails } = useStock(stock?.id);
   const displayStock = stockDetails || stock;
+  console.log("displayStock:", displayStock);
 
   const { data: tokenBalance } = useBalance({
     address,
@@ -179,7 +180,6 @@ export default function StockDetail({ stock, onBack }) {
         CHAINLINK_CONFIG.gasLimit,
         CHAINLINK_CONFIG.donID,
       );
-
       sendRequestCall(
         {
           address: CONTRACTS.StockMarket,
@@ -416,6 +416,14 @@ export default function StockDetail({ stock, onBack }) {
       const timestamp = Math.floor(Date.now() / 1000);
       const deadline = timestamp + 10000; // 10 seconds from now
 
+      // Get signer nonce for Other stocks
+      const currentNonce = await publicClient.readContract({
+        address: CONTRACTS.StockMarket,
+        abi: ABIS.StockMarket,
+        functionName: "signerNonce",
+        args: [address],
+      });
+
       // Get pack data for signing
       const functionSelector = getIssueOtherSelector();
 
@@ -429,7 +437,7 @@ export default function StockDetail({ stock, onBack }) {
           BigInt(displayStock.price || 0),
           functionSelector,
           address,
-          signerNonce,
+          currentNonce,
         ],
       });
 
@@ -823,12 +831,6 @@ export default function StockDetail({ stock, onBack }) {
     isMain,
     publicClient,
   ]);
-
-  // Get estimated USDC amount for redeem (using price as approximation)
-  const estimatedUsdc =
-    redeemAmount && displayStock?.price
-      ? (Number(redeemAmount) * (Number(displayStock.price) / 1e18)).toFixed(2)
-      : "0";
 
   return (
     <>
@@ -1362,7 +1364,7 @@ export default function StockDetail({ stock, onBack }) {
                       </div>
                       <div className="estimated-receive">
                         <span>
-                          You will receive: ${formatNumber(estimatedUsdc)} USDC
+                          Redeem Quantity: {formatNumber(redeemAmount || "0")} {displayStock?.symbol}
                         </span>
                       </div>
                       <div className="fee-info-row">

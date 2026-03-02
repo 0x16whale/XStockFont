@@ -1,6 +1,19 @@
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 
 export default function Header({ currentPage, onNavigate }) {
+  const { login, logout, authenticated, user } = usePrivy();
+  const { wallets } = useWallets();
+
+  // Get the active wallet address (first wallet in the list or from user object)
+  const activeWallet = wallets[0];
+  const address = activeWallet?.address || user?.wallet?.address;
+
+  // Format address for display
+  const formatAddress = (addr) => {
+    if (!addr) return "";
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  };
+
   return (
     <header className="header">
       <div className="header-container">
@@ -30,7 +43,24 @@ export default function Header({ currentPage, onNavigate }) {
         </nav>
 
         <div className="header-actions">
-          <ConnectButton />
+          {authenticated && address ? (
+            <div className="wallet-connected">
+              <span className="wallet-address">{formatAddress(address)}</span>
+              <button className="wallet-disconnect-btn" onClick={logout}>
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <button className="wallet-connect-btn" onClick={login}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 7h-9" />
+                <path d="M14 17H5" />
+                <circle cx="17" cy="17" r="3" />
+                <circle cx="7" cy="7" r="3" />
+              </svg>
+              Connect Wallet
+            </button>
+          )}
         </div>
       </div>
     </header>

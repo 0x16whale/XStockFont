@@ -15,6 +15,9 @@ const ORACLE_OPTIONS = [
   { name: "Custom", address: "custom" },
 ];
 
+// Price API base URL
+const PRICE_API_BASE_URL = "https://api.uken.tech/api/v1/price/stock/finnhub?symbol=";
+
 export default function CreateStockModal({ isOpen, onClose, onSuccess }) {
   const { address } = useAccount();
   const [showTxModal, setShowTxModal] = useState(false);
@@ -44,6 +47,14 @@ export default function CreateStockModal({ isOpen, onClose, onSuccess }) {
       setIsVisible(false);
     }
   }, [isOpen]);
+
+  // Auto-generate priceUri when symbol changes
+  useEffect(() => {
+    if (formData.symbol) {
+      const priceUri = `${PRICE_API_BASE_URL}${formData.symbol}`;
+      setFormData(prev => ({ ...prev, priceUri }));
+    }
+  }, [formData.symbol]);
 
   const { writeContract, data: hash, isPending, error: writeError, reset } = useWriteContract();
 
@@ -174,6 +185,14 @@ export default function CreateStockModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
+  // Handle symbol input - uppercase and remove spaces
+  const handleSymbolChange = (e) => {
+    const value = e.target.value;
+    // Remove all whitespace and convert to uppercase
+    const sanitizedValue = value.replace(/\s/g, "").toUpperCase();
+    setFormData({ ...formData, symbol: sanitizedValue });
+  };
+
   const getTxStatus = () => {
     if (isPending) return "pending";
     if (isConfirming) return "confirming";
@@ -228,9 +247,10 @@ export default function CreateStockModal({ isOpen, onClose, onSuccess }) {
                     className={`form-input ${errors.symbol ? "error" : ""}`}
                     placeholder="e.g. AAPL"
                     value={formData.symbol}
-                    onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
+                    onChange={handleSymbolChange}
                   />
                   {errors.symbol && <span className="error-text">{errors.symbol}</span>}
+                  <span className="help-text">Auto-converted to uppercase, no spaces allowed</span>
                 </div>
               </div>
 
@@ -258,10 +278,13 @@ export default function CreateStockModal({ isOpen, onClose, onSuccess }) {
                   className={`form-input ${errors.priceUri ? "error" : ""}`}
                   placeholder="https://api.example.com/price/..."
                   value={formData.priceUri}
-                  onChange={(e) => setFormData({ ...formData, priceUri: e.target.value })}
+                  readOnly
+                  disabled
                 />
                 {errors.priceUri && <span className="error-text">{errors.priceUri}</span>}
-                <span className="help-text">API endpoint for stock price data</span>
+                <span className="help-text">
+                  Auto-generated from symbol: {PRICE_API_BASE_URL}{formData.symbol || "{SYMBOL}"}
+                </span>
               </div>
 
               <div className="form-group">

@@ -94,8 +94,15 @@ export const formatPrice = (price) => {
   return priceNum.toFixed(4);
 };
 
+// Format raw price without scaling (for API-fetched prices)
+export const formatRawPrice = (price) => {
+  if (!price) return "0.00";
+  const priceNum = Number(price);
+  return priceNum.toFixed(4);
+};
+
 export const formatTimestamp = (timestamp) => {
-  if (!timestamp) return "-";
+  if (!timestamp || timestamp === 0) return "0";
   const date = new Date(Number(timestamp) * 1000);
   // Convert to Shanghai time (UTC+8)
   return date.toLocaleString("zh-CN", {
