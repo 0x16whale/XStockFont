@@ -46,6 +46,11 @@
     },
     {
       "inputs": [],
+      "name": "AlreadyParticipated",
+      "type": "error"
+    },
+    {
+      "inputs": [],
       "name": "BurnFail",
       "type": "error"
     },
@@ -67,6 +72,11 @@
     {
       "inputs": [],
       "name": "CollateralOutputErr",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Cooling",
       "type": "error"
     },
     {
@@ -233,6 +243,11 @@
       "type": "error"
     },
     {
+      "inputs": [],
+      "name": "OverflowIssue",
+      "type": "error"
+    },
+    {
       "inputs": [
         {
           "internalType": "uint16",
@@ -292,6 +307,11 @@
     {
       "inputs": [],
       "name": "StockMarketClosed",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SymbolRegistered",
       "type": "error"
     },
     {
@@ -864,60 +884,19 @@
       "type": "event"
     },
     {
-      "inputs": [],
-      "name": "COOLING_LIMIT",
-      "outputs": [
+      "inputs": [
         {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "addr",
+          "type": "address"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "DENOMAINATOR",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "MINIMUM",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "MINIMUM_COLLATERAL",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "TIMEOUT",
+      "name": "_getTokenBalance",
       "outputs": [
         {
           "internalType": "uint256",
@@ -932,7 +911,7 @@
       "inputs": [
         {
           "internalType": "uint64",
-          "name": "id",
+          "name": "thisStockId",
           "type": "uint64"
         }
       ],
@@ -970,7 +949,7 @@
       "inputs": [
         {
           "internalType": "uint64",
-          "name": "id",
+          "name": "thisStockId",
           "type": "uint64"
         },
         {
@@ -999,7 +978,7 @@
         },
         {
           "internalType": "uint64",
-          "name": "id",
+          "name": "thisStockId",
           "type": "uint64"
         },
         {
@@ -1079,7 +1058,7 @@
       "inputs": [
         {
           "internalType": "uint64",
-          "name": "id",
+          "name": "thisStockId",
           "type": "uint64"
         }
       ],
@@ -1140,32 +1119,8 @@
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "token",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "addr",
-          "type": "address"
-        }
-      ],
-      "name": "getTokenBalance",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "uint64",
-          "name": "id",
+          "name": "thisStockId",
           "type": "uint64"
         }
       ],
@@ -1184,7 +1139,7 @@
       "inputs": [
         {
           "internalType": "uint64",
-          "name": "id",
+          "name": "thisStockId",
           "type": "uint64"
         },
         {
@@ -1194,13 +1149,7 @@
         }
       ],
       "name": "initialIssue",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "issueAmount",
-          "type": "uint256"
-        }
-      ],
+      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -1240,7 +1189,7 @@
       "inputs": [
         {
           "internalType": "uint64",
-          "name": "id",
+          "name": "thisStockId",
           "type": "uint64"
         },
         {
@@ -1382,7 +1331,7 @@
       "inputs": [
         {
           "internalType": "uint64",
-          "name": "id",
+          "name": "thisStockId",
           "type": "uint64"
         },
         {
@@ -1518,7 +1467,7 @@
         },
         {
           "internalType": "uint64",
-          "name": "id",
+          "name": "thisStockId",
           "type": "uint64"
         },
         {
@@ -1758,10 +1707,5 @@
       "stateMutability": "payable",
       "type": "receive"
     }
-  ],
-  "linkReferences": {},
-  "deployedLinkReferences": {},
-  "immutableReferences": {},
-  "inputSourceName": "project/contracts/core/StockMarket.sol",
-  "buildInfoId": "solc-0_8_26-9c8a56c6d9bb4ae1f3f2d6d577ecfe9357b098f8"
+  ]
 }

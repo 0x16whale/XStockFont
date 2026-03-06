@@ -578,7 +578,7 @@ export default function StockDetail({ stock, onBack }) {
             Number(CHAINLINK_CONFIG.gasLimit), // uint32
             DON_ID,
           ],
-          value: CHAINLINK_CONFIG.updateFee || 0n,
+          value: isMain ? CHAINLINK_CONFIG.updateFee || 0n : oracleFee || 0n,
         },
         {
           onSuccess: (hash) => {
@@ -1478,7 +1478,13 @@ export default function StockDetail({ stock, onBack }) {
                 <div className="curator-info-item fee-item">
                   <span className="curator-info-label">Update Fee</span>
                   <span className="curator-info-value fee-value">
-                    {updateFee ? formatUnits(updateFee, 18) : "0"} AVAX
+                    {isMain
+                      ? updateFee
+                        ? formatUnits(updateFee, 18)
+                        : "0"
+                      : oracleFee
+                        ? formatUnits(oracleFee, 18)
+                        : "0"} AVAX
                   </span>
                 </div>
               </div>

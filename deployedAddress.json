@@ -1,13 +1,13 @@
 {
   "43113": {
     "network": "avax_fuji",
-    "time": "2026/3/2 10:38:44",
+    "time": "2026/3/6 16:05:27",
     "USDC": "0xf7789450c8a0d6525f9404de77a03eb8cf133caf",
-    "StockRegistry": "0x4b8bddb02aca19a178c15be9d8aad300772023aa",
-    "StockMarket": "0xff590d439eae2732307f0ccf805b78410de396e5",
-    "Management": "0xd8ad1c4529b792ed9306f7235d4950f130612d90",
-    "Validator": "0x09526771b82183303f5cc71c9bf7b2cadac765ca",
-    "StockFunctionsOracle": "0xe5b01651d14e85fd3a5a45cf8e360997aaf42bd0",
-    "StockStreamsOracle": "0xd894d98812225b7f5245d55ad6e607dc48ea6bb7"
+    "StockRegistry": "0x1b3668c674fd4d1f6916372c3ad82c5651572083",
+    "StockMarket": "0x25d073d94af55f35be989f3c1b4034d1360c8c2b",
+    "Management": "0x5c22536d973d55dfeee7a1c6f5164aa479453698",
+    "Validator": "0x9d4bf939d21bb01e1b7de33af32f6282b1df2298",
+    "StockFunctionsOracle": "0x5fe1b4afa5a4738c9d77a139d0d6812941929083",
+    "StockStreamsOracle": "0xa9c5b2e6ff08a51dd2eb4e860c8e31cf1b4b3910"
   }
 }
