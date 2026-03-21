@@ -12,13 +12,13 @@
   },
   "8453": {
     "network": "base",
-    "time": "2026/3/21 15:30:27",
+    "time": "2026/3/21 20:08:27",
     "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    "StockRegistry": "0xa6264eadd6624a403e9b1c69686f7baf86648efe",
-    "StockMarket": "0x78587770f8003240cd3f542fa4af834312443b64",
-    "Management": "0x19c6eb1ab3397db001bf71d87ee6d6df1db1f37e",
-    "Validator": "0x2d3b2fb0cb6d10f2e2e32904a07c520b3e706820",
-    "StockFunctionsOracle": "0x10f76947c023b21c4f24b4a2b9cf6509309d881c",
-    "StockStreamsOracle": "0x117cecbe2565a395b7222507d24b085d1e8577be"
+    "StockRegistry": "0xd007085676fba9869d48885de7523bcfdc277a59",
+    "StockMarket": "0x275ac7b03bbaefef297758dc26283b2c0c70b55c",
+    "Management": "0x43987bb1e73565a47ad53a76ce66762ff7d2b1fd",
+    "Validator": "0xbd0b2aa92c7cc4394508c9b8c96b470d5da1e744",
+    "StockFunctionsOracle": "0x109fe304da9744c093fa1dde08a5e180c8cead8d",
+    "StockStreamsOracle": "0x877e1d5028712d0c242a4bfdfbc3e9514392d25a"
   }
 }
