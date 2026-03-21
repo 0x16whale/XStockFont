@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useReadContract } from "wagmi";
+import { useReadContract, useChainId } from "wagmi";
 import { CONTRACTS, ABIS, formatStockState, getStatusBadgeClass } from "../config/contracts";
 
 export default function StatusModal({ stockId, isOpen, onClose }) {
+  const chainId = useChainId();
   const [status, setStatus] = useState(null);
   const [checkCount, setCheckCount] = useState(0);
 

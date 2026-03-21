@@ -1,4 +1,4 @@
-import { useAccount } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 import { useStocks } from "../hooks/useStocks";
 import {
   formatAddress,
@@ -9,14 +9,23 @@ import {
   formatStockState,
   formatStockType,
 } from "../config/contracts";
+import { isBaseMainnet } from "../config/networks";
+import { CHAIN_NAME } from "../config/contracts";
 
 export default function StockList({ onSelectStock, onCreateStock }) {
   const { isConnected } = useAccount();
-  const { stocks, isLoading, error, refetch } = useStocks();
+  const chainId = useChainId();
+  const { stocks, isLoading, error, refetch, isSwitchingNetwork } = useStocks();
 
   const getStockIcon = (symbol) => (
     <div className="stock-icon">{symbol?.toUpperCase() || "Undefined"}</div>
   );
+
+  // Check if network is being determined
+  const isNetworkLoading = isConnected && chainId === undefined;
+
+  // Check if on wrong network
+  const isWrongNetwork = isConnected && chainId !== undefined && !isBaseMainnet(chainId);
 
   return (
     <div className="stock-list-page">
@@ -29,7 +38,7 @@ export default function StockList({ onSelectStock, onCreateStock }) {
           <button
             className="btn btn-secondary"
             onClick={refetch}
-            disabled={isLoading}
+            disabled={isLoading || !isConnected || isSwitchingNetwork}
           >
             <svg
               viewBox="0 0 24 24"
@@ -85,14 +94,48 @@ export default function StockList({ onSelectStock, onCreateStock }) {
         </div>
       )}
 
-      {isConnected && isLoading && (
+      {isConnected && isNetworkLoading && (
         <div className="loading-state">
           <div className="spinner spinner-lg"></div>
-          <p>Loading...</p>
+          <p>Detecting network...</p>
         </div>
       )}
 
-      {isConnected && error && (
+      {isConnected && !isNetworkLoading && isWrongNetwork && (
+        <div className="error-state">
+          <div className="error-state-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <h3>Wrong Network</h3>
+          <p>{isSwitchingNetwork ? `Auto-switching to ${CHAIN_NAME}...` : `Please switch to ${CHAIN_NAME} to view the market`}</p>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>
+            Current chainId: {chainId}
+          </p>
+          {!isSwitchingNetwork && (
+            <button className="btn btn-primary" onClick={refetch} style={{ marginTop: "1rem" }}>
+              Try Again
+            </button>
+          )}
+        </div>
+      )}
+
+      {isConnected && !isNetworkLoading && !isWrongNetwork && isLoading && (
+        <div className="loading-state">
+          <div className="spinner spinner-lg"></div>
+          <p>Loading stocks...</p>
+        </div>
+      )}
+
+      {isConnected && !isNetworkLoading && !isWrongNetwork && error && (
         <div className="error-state">
           <div className="error-state-icon">
             <svg
@@ -114,7 +157,7 @@ export default function StockList({ onSelectStock, onCreateStock }) {
         </div>
       )}
 
-      {isConnected && !isLoading && !error && stocks.length === 0 && (
+      {isConnected && !isNetworkLoading && !isWrongNetwork && !isLoading && !error && stocks.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon">
             <svg
@@ -134,7 +177,7 @@ export default function StockList({ onSelectStock, onCreateStock }) {
         </div>
       )}
 
-      {isConnected && !isLoading && !error && stocks.length > 0 && (
+      {isConnected && !isNetworkLoading && !isWrongNetwork && !isLoading && !error && stocks.length > 0 && (
         <div className="stock-grid">
           {stocks.map((stock) => (
             <div

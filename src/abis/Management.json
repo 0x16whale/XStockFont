@@ -36,6 +36,11 @@
     },
     {
       "inputs": [],
+      "name": "AlreadyParticipated",
+      "type": "error"
+    },
+    {
+      "inputs": [],
       "name": "BurnFail",
       "type": "error"
     },
@@ -57,6 +62,11 @@
     {
       "inputs": [],
       "name": "CollateralOutputErr",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Cooling",
       "type": "error"
     },
     {
@@ -176,6 +186,11 @@
     },
     {
       "inputs": [],
+      "name": "OverflowIssue",
+      "type": "error"
+    },
+    {
+      "inputs": [],
       "name": "QuantitySmall",
       "type": "error"
     },
@@ -213,6 +228,11 @@
     {
       "inputs": [],
       "name": "StockMarketClosed",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SymbolRegistered",
       "type": "error"
     },
     {
@@ -768,6 +788,19 @@
     {
       "inputs": [
         {
+          "internalType": "uint64",
+          "name": "newCoolingTime",
+          "type": "uint64"
+        }
+      ],
+      "name": "changeCoolingTime",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
           "name": "newManager",
           "type": "address"
@@ -776,6 +809,38 @@
       "name": "changeManager",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "coolingTime",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "curatorSendTime",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -1029,10 +1094,5 @@
       "stateMutability": "payable",
       "type": "receive"
     }
-  ],
-  "linkReferences": {},
-  "deployedLinkReferences": {},
-  "immutableReferences": {},
-  "inputSourceName": "project/contracts/core/Management.sol",
-  "buildInfoId": "solc-0_8_26-eaa822a3fe7cb9e7f1a5ad4cbd002a06f6a0156f"
+  ]
 }

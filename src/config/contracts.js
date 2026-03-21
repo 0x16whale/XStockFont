@@ -6,19 +6,27 @@ import StockStreamsOracleABI from "../abis/StockStreamsOracle.json";
 import ERC20ABI from "../abis/ERC20.json";
 import ValidatorABI from "../abis/Validator.json";
 import ManagementABI from "../abis/Management.json";
+import {
+  TARGET_CHAIN_ID,
+  TARGET_CHAIN_NAME,
+  NATIVE_CURRENCY,
+  EXPLORER_URL,
+  CONTRACTS,
+  CHAINLINK_CONFIG,
+  getExplorerAddressUrl,
+  getExplorerTxUrl,
+} from "./networks";
 
-// Fuji Testnet Chain ID
-export const FUJI_CHAIN_ID = 43113;
-
-// Contract Addresses
-export const CONTRACTS = {
-  StockRegistry: deployedAddress[FUJI_CHAIN_ID].StockRegistry,
-  StockMarket: deployedAddress[FUJI_CHAIN_ID].StockMarket,
-  StockFunctionsOracle: deployedAddress[FUJI_CHAIN_ID].StockFunctionsOracle,
-  StockStreamsOracle: deployedAddress[FUJI_CHAIN_ID].StockStreamsOracle,
-  USDC: deployedAddress[FUJI_CHAIN_ID].USDC,
-  Validator: deployedAddress[FUJI_CHAIN_ID].Validator,
-  Management: deployedAddress[FUJI_CHAIN_ID].Management,
+// Re-export constants
+export {
+  TARGET_CHAIN_ID as CHAIN_ID,
+  TARGET_CHAIN_NAME as CHAIN_NAME,
+  NATIVE_CURRENCY,
+  EXPLORER_URL,
+  CONTRACTS,
+  CHAINLINK_CONFIG,
+  getExplorerAddressUrl,
+  getExplorerTxUrl,
 };
 
 // Contract ABIs
@@ -32,6 +40,9 @@ export const ABIS = {
   Management: ManagementABI.abi,
 };
 
+// Legacy: DON_ID for Base Mainnet
+export const DON_ID = CHAINLINK_CONFIG.donID;
+
 // Stock State Enum
 export const StockState = {
   0: "Invalid",
@@ -43,7 +54,7 @@ export const StockState = {
 // ChangeWay Enum (for Management.sendChangeRequest)
 export const ChangeWay = {
   0: "ChangeName",
-  1: "ChangeSymbol", 
+  1: "ChangeSymbol",
   2: "ChangeDescribe",
   3: "ChangeProof",
   4: "ChangePriceURI",
@@ -158,19 +169,3 @@ export const getStatusBadgeClass = (state) => {
       return "badge-draft";
   }
 };
-
-// Explorer URL
-const EXPLORER_URL = "https://testnet.snowtrace.io";
-
-export const getExplorerAddressUrl = (address) => {
-  if (!address) return "#";
-  return `${EXPLORER_URL}/address/${address}`;
-};
-
-export const getExplorerTxUrl = (hash) => {
-  if (!hash) return "#";
-  return `${EXPLORER_URL}/tx/${hash}`;
-};
-
-// Chainlink Functions DON ID for Fuji
-export const DON_ID = "0x66756e2d6176616c616e6368652d66756a692d31000000000000000000000000";

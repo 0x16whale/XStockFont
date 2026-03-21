@@ -1,12 +1,18 @@
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useChainId } from "wagmi";
+import NetworkSwitcher from "./NetworkSwitcher";
 
-export default function Header({ currentPage, onNavigate }) {
+export default function Header({ currentPage, onNavigate, onNetworkSwitch }) {
   const { login, logout, authenticated, user } = usePrivy();
   const { wallets } = useWallets();
+  const chainId = useChainId();
 
   // Get the active wallet address (first wallet in the list or from user object)
   const activeWallet = wallets[0];
   const address = activeWallet?.address || user?.wallet?.address;
+
+  // Check if on correct network
+  const isCorrectNetwork = chainId === 8453;
 
   // Format address for display
   const formatAddress = (addr) => {
@@ -43,6 +49,9 @@ export default function Header({ currentPage, onNavigate }) {
         </nav>
 
         <div className="header-actions">
+          {authenticated && address && (
+            <NetworkSwitcher onNetworkSwitch={onNetworkSwitch} />
+          )}
           {authenticated && address ? (
             <div className="wallet-connected">
               <span className="wallet-address">{formatAddress(address)}</span>

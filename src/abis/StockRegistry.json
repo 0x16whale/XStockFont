@@ -15,6 +15,11 @@
     },
     {
       "inputs": [],
+      "name": "AlreadyParticipated",
+      "type": "error"
+    },
+    {
+      "inputs": [],
       "name": "BurnFail",
       "type": "error"
     },
@@ -36,6 +41,11 @@
     {
       "inputs": [],
       "name": "CollateralOutputErr",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Cooling",
       "type": "error"
     },
     {
@@ -150,6 +160,11 @@
     },
     {
       "inputs": [],
+      "name": "OverflowIssue",
+      "type": "error"
+    },
+    {
+      "inputs": [],
       "name": "QuantitySmall",
       "type": "error"
     },
@@ -176,6 +191,11 @@
     {
       "inputs": [],
       "name": "StockMarketClosed",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SymbolRegistered",
       "type": "error"
     },
     {
@@ -1065,11 +1085,25 @@
       ],
       "stateMutability": "view",
       "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "symbolRegistered",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     }
-  ],
-  "linkReferences": {},
-  "deployedLinkReferences": {},
-  "immutableReferences": {},
-  "inputSourceName": "project/contracts/core/StockRegistry.sol",
-  "buildInfoId": "solc-0_8_26-3fd2392ee2c16d01eeff5bcd5e1f98b65eda1c48"
+  ]
 }

@@ -56,6 +56,11 @@
     },
     {
       "inputs": [],
+      "name": "InvalidRequest",
+      "type": "error"
+    },
+    {
+      "inputs": [],
       "name": "NoInlineSecrets",
       "type": "error"
     },
@@ -202,6 +207,19 @@
     },
     {
       "inputs": [],
+      "name": "COOLING_TIME",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "LIMIT_PRICE",
       "outputs": [
         {
@@ -285,6 +303,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "getValidRequest",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "state",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "bytes32",
@@ -315,6 +346,19 @@
           "internalType": "string",
           "name": "",
           "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "latestRequestTime",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
         }
       ],
       "stateMutability": "view",
@@ -499,21 +543,5 @@
       "stateMutability": "nonpayable",
       "type": "function"
     }
-  ],
-  "linkReferences": {},
-  "deployedLinkReferences": {},
-  "immutableReferences": {
-    "17": [
-      {
-        "length": 32,
-        "start": 787
-      },
-      {
-        "length": 32,
-        "start": 5159
-      }
-    ]
-  },
-  "inputSourceName": "project/contracts/core/StockFunctionsOracle.sol",
-  "buildInfoId": "solc-0_8_26-9c8a56c6d9bb4ae1f3f2d6d577ecfe9357b098f8"
+  ]
 }

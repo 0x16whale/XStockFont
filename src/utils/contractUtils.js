@@ -1,5 +1,8 @@
 import { encodeFunctionData, parseUnits, toFunctionSelector } from "viem";
-import { ABIS } from "../config/contracts";
+import { ABIS, CHAINLINK_CONFIG } from "../config/contracts";
+
+// Export Chainlink config for Base Mainnet
+export { CHAINLINK_CONFIG };
 
 // Encode touchPythOraclePrice for Main stocks
 export function encodeTouchPythOraclePrice(priceFeedId, priceUpdate, age) {
@@ -76,13 +79,4 @@ export const PYTH_PRICE_FEED_IDS = {
   MSFT: "0xd0ca44519e74c4007c1d87f5e3aafc4d15f0f3e57fb96c0f3c4e3e5b0e3d3f6a",
   GOOGL: "0xde65b5f3185e5b4d8b3c2e5c5e5d5e5f5a5b5c5d5e5f5a5b5c5d5e5f5a5b5c5d",
   AMZN: "0x5e5d5c5b5a595857565554535251504f4e4d4c4b4a494847464544434241403f",
-};
-
-// Chainlink Functions config
-export const CHAINLINK_CONFIG = {
-  subscriptionId: 15766n,
-  gasLimit: 300000,
-  donID: "0x66756e2d6176616c616e6368652d66756a692d31000000000000000000000000",
-  oracleFee: parseUnits("0.001", 18), // Native token fee for oracle requests
-  updateFee: 0n, // Native token fee for reserve update
 };

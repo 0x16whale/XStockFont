@@ -9,5 +9,16 @@
     "Validator": "0x9d4bf939d21bb01e1b7de33af32f6282b1df2298",
     "StockFunctionsOracle": "0x5fe1b4afa5a4738c9d77a139d0d6812941929083",
     "StockStreamsOracle": "0xa9c5b2e6ff08a51dd2eb4e860c8e31cf1b4b3910"
+  },
+  "8453": {
+    "network": "base",
+    "time": "2026/3/21 15:30:27",
+    "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "StockRegistry": "0xa6264eadd6624a403e9b1c69686f7baf86648efe",
+    "StockMarket": "0x78587770f8003240cd3f542fa4af834312443b64",
+    "Management": "0x19c6eb1ab3397db001bf71d87ee6d6df1db1f37e",
+    "Validator": "0x2d3b2fb0cb6d10f2e2e32904a07c520b3e706820",
+    "StockFunctionsOracle": "0x10f76947c023b21c4f24b4a2b9cf6509309d881c",
+    "StockStreamsOracle": "0x117cecbe2565a395b7222507d24b085d1e8577be"
   }
 }

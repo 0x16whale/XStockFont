@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAccount } from "wagmi";
 import Header from "./components/Header";
 import StockList from "./components/StockList";
@@ -13,6 +13,9 @@ function App() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [createdStockId, setCreatedStockId] = useState(null);
+  
+  // Refresh key to trigger data reload
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleNavigate = (page) => {
     setCurrentPage(page);
@@ -36,16 +39,37 @@ function App() {
   const handleCreateSuccess = () => {
     setCreatedStockId(1);
     setIsStatusModalOpen(true);
+    // Refresh data after successful creation
+    triggerRefresh();
   };
+
+  // Handle network switch - refresh all data
+  const handleNetworkSwitch = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+    // Also refresh selected stock if on detail page
+    if (selectedStock) {
+      setSelectedStock(prev => ({ ...prev, _refresh: Date.now() }));
+    }
+  }, [selectedStock]);
+
+  // Global refresh function that can be passed to child components
+  const triggerRefresh = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+  }, []);
 
   return (
     <div className="app">
-      <Header currentPage={currentPage} onNavigate={handleNavigate} />
+      <Header 
+        currentPage={currentPage} 
+        onNavigate={handleNavigate} 
+        onNetworkSwitch={handleNetworkSwitch}
+      />
       
       <main className="main-content">
         <div className="container">
           {currentPage === "home" && (
             <StockList 
+              key={refreshKey}
               onSelectStock={handleSelectStock} 
               onCreateStock={handleCreateStock}
             />
@@ -53,8 +77,10 @@ function App() {
           
           {currentPage === "detail" && selectedStock && (
             <StockDetail 
+              key={`${selectedStock.id}-${refreshKey}`}
               stock={selectedStock} 
               onBack={() => handleNavigate("home")}
+              onTransactionSuccess={triggerRefresh}
             />
           )}
         </div>

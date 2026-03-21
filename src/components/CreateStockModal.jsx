@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId } from "wagmi";
 import { CONTRACTS, ABIS } from "../config/contracts";
 import TxStatusModal from "./TxStatusModal";
 
-// Supported collateral tokens
+// Get collateral options
 const COLLATERAL_OPTIONS = [
   { symbol: "USDC", address: CONTRACTS.USDC },
 ];
 
-// Oracle options
+// Get oracle options
 const ORACLE_OPTIONS = [
   { name: "StockStreamsOracle (Main Stock)", address: CONTRACTS.StockStreamsOracle },
   { name: "StockFunctionsOracle (Other Stock)", address: CONTRACTS.StockFunctionsOracle },
@@ -20,8 +20,10 @@ const PRICE_API_BASE_URL = "https://api.uken.tech/api/v1/price/stock/finnhub?sym
 
 export default function CreateStockModal({ isOpen, onClose, onSuccess }) {
   const { address } = useAccount();
+  const chainId = useChainId();
   const [showTxModal, setShowTxModal] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  
   const [oracleType, setOracleType] = useState("StockFunctionsOracle (Other Stock)");
   const [customOracle, setCustomOracle] = useState("");
   const [formData, setFormData] = useState({

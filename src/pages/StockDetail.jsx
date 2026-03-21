@@ -5,6 +5,7 @@ import {
   useBalance,
   usePublicClient,
   useReadContract,
+  useChainId,
 } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import {
@@ -21,14 +22,15 @@ import {
   formatTimestamp,
   getExplorerAddressUrl,
   DON_ID,
+  NATIVE_CURRENCY,
 } from "../config/contracts";
 import { useStock } from "../hooks/useStocks";
 import TxStatusModal from "../components/TxStatusModal";
+import { CHAINLINK_CONFIG } from "../config/contracts";
 import {
   encodeTouchPythOraclePrice,
   encodeSendRequest,
   getIssueOtherSelector,
-  CHAINLINK_CONFIG,
 } from "../utils/contractUtils";
 
 // Pyth price feed IDs (Stable channel)
@@ -52,9 +54,14 @@ async function fetchPythUpdateData(priceFeedId) {
   return { updateData, price: data.parsed[0].price.price };
 }
 
-export default function StockDetail({ stock, onBack }) {
+export default function StockDetail({ stock, onBack, onTransactionSuccess }) {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
   const publicClient = usePublicClient();
+  
+  // Use Base Mainnet configuration
+  const chainlinkConfig = CHAINLINK_CONFIG;
+  const nativeCurrency = NATIVE_CURRENCY;
   const [activeTab, setActiveTab] = useState("mint");
   const [mintAmount, setMintAmount] = useState("");
   const [redeemAmount, setRedeemAmount] = useState("");
@@ -176,9 +183,9 @@ export default function StockDetail({ stock, onBack }) {
         0, // donHostedSecretsVersion
         [displayStock.symbol], // args - stock symbol
         [], // bytesArgs
-        CHAINLINK_CONFIG.subscriptionId,
-        CHAINLINK_CONFIG.gasLimit,
-        CHAINLINK_CONFIG.donID,
+        chainlinkConfig.subscriptionId,
+        chainlinkConfig.gasLimit,
+        chainlinkConfig.donID,
       );
       sendRequestCall(
         {
@@ -511,9 +518,9 @@ export default function StockDetail({ stock, onBack }) {
         0, // donHostedSecretsVersion
         [displayStock.symbol], // args - stock symbol
         [], // bytesArgs
-        CHAINLINK_CONFIG.subscriptionId,
-        CHAINLINK_CONFIG.gasLimit,
-        CHAINLINK_CONFIG.donID,
+        chainlinkConfig.subscriptionId,
+        chainlinkConfig.gasLimit,
+        chainlinkConfig.donID,
       );
 
       redeemCall(
@@ -548,6 +555,7 @@ export default function StockDetail({ stock, onBack }) {
   };
 
   const handleTxClose = () => {
+    const wasSuccess = txStatus === "success";
     setShowTxModal(false);
     // Reset states after modal closes
     setTimeout(() => {
@@ -555,6 +563,11 @@ export default function StockDetail({ stock, onBack }) {
       setTxHash(null);
       setTxError(null);
     }, 300);
+    
+    // Trigger refresh if transaction was successful
+    if (wasSuccess) {
+      onTransactionSuccess?.();
+    }
   };
 
   // Handle Update Reserve (Validator.update)
@@ -574,11 +587,11 @@ export default function StockDetail({ stock, onBack }) {
           functionName: "update",
           args: [
             BigInt(displayStock.id),
-            BigInt(CHAINLINK_CONFIG.subscriptionId),
-            Number(CHAINLINK_CONFIG.gasLimit), // uint32
+            BigInt(chainlinkConfig.subscriptionId),
+            Number(chainlinkConfig.gasLimit), // uint32
             DON_ID,
           ],
-          value: isMain ? CHAINLINK_CONFIG.updateFee || 0n : oracleFee || 0n,
+          value: isMain ? chainlinkConfig.updateFee || 0n : oracleFee || 0n,
         },
         {
           onSuccess: (hash) => {
@@ -923,7 +936,7 @@ export default function StockDetail({ stock, onBack }) {
               <div className="contract-item">
                 <span className="contract-label">Stock Contract</span>
                 <a
-                  href={getExplorerAddressUrl(displayStock?.stock)}
+                  href={getExplorerAddressUrl(displayStock?.stock, chainId)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="contract-link"
@@ -944,7 +957,7 @@ export default function StockDetail({ stock, onBack }) {
               <div className="contract-item">
                 <span className="contract-label">Collateral</span>
                 <a
-                  href={getExplorerAddressUrl(displayStock?.collateral)}
+                  href={getExplorerAddressUrl(displayStock?.collateral, chainId)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="contract-link"
@@ -965,7 +978,7 @@ export default function StockDetail({ stock, onBack }) {
               <div className="contract-item">
                 <span className="contract-label">Oracle</span>
                 <a
-                  href={getExplorerAddressUrl(displayStock?.oracle)}
+                  href={getExplorerAddressUrl(displayStock?.oracle, chainId)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="contract-link"
@@ -986,7 +999,7 @@ export default function StockDetail({ stock, onBack }) {
               <div className="contract-item">
                 <span className="contract-label">Fund Pool</span>
                 <a
-                  href={getExplorerAddressUrl(displayStock?.stockFundPool)}
+                  href={getExplorerAddressUrl(displayStock?.stockFundPool, chainId)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="contract-link"
@@ -1007,7 +1020,7 @@ export default function StockDetail({ stock, onBack }) {
               <div className="contract-item">
                 <span className="contract-label">Curator</span>
                 <a
-                  href={getExplorerAddressUrl(displayStock?.curator)}
+                  href={getExplorerAddressUrl(displayStock?.curator, chainId)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="contract-link"
@@ -1257,7 +1270,7 @@ export default function StockDetail({ stock, onBack }) {
                                     {oracleFee
                                       ? formatUnits(oracleFee, 18)
                                       : "0"}{" "}
-                                    AVAX
+                                    {nativeCurrency}
                                   </span>
                                 </div>
 
@@ -1484,7 +1497,7 @@ export default function StockDetail({ stock, onBack }) {
                         : "0"
                       : oracleFee
                         ? formatUnits(oracleFee, 18)
-                        : "0"} AVAX
+                        : "0"} {nativeCurrency}
                   </span>
                 </div>
               </div>
@@ -1633,7 +1646,7 @@ export default function StockDetail({ stock, onBack }) {
                     {feeInfo?.changeFee
                       ? formatUnits(feeInfo.changeFee, 18)
                       : "0"}{" "}
-                    AVAX
+                    {nativeCurrency}
                   </span>
                 </div>
               </div>

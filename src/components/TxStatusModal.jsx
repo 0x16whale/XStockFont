@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-
-const EXPLORER_URL = "https://testnet.snowtrace.io/tx/";
+import { useChainId } from "wagmi";
+import { getExplorerTxUrl, CHAIN_NAME } from "../config/contracts";
 
 export default function TxStatusModal({ isOpen, hash, status, error, onClose }) {
+  const chainId = useChainId();
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -85,7 +86,7 @@ export default function TxStatusModal({ isOpen, hash, status, error, onClose }) 
                   </button>
                 </div>
                 <a 
-                  href={`${EXPLORER_URL}${hash}`} 
+                  href={getExplorerTxUrl(hash)} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="tx-link"
@@ -95,7 +96,7 @@ export default function TxStatusModal({ isOpen, hash, status, error, onClose }) 
                     <polyline points="15 3 21 3 21 9" />
                     <line x1="10" y1="14" x2="21" y2="3" />
                   </svg>
-                  View on SnowTrace
+                  View on {CHAIN_NAME}
                 </a>
               </>
             )}
@@ -126,12 +127,12 @@ export default function TxStatusModal({ isOpen, hash, status, error, onClose }) 
                   </button>
                 </div>
                 <a 
-                  href={`${EXPLORER_URL}${hash}`} 
+                  href={getExplorerTxUrl(hash)} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="tx-link"
                 >
-                  View on SnowTrace
+                  View on {CHAIN_NAME}
                 </a>
               </>
             )}

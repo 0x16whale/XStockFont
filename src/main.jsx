@@ -8,13 +8,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "@privy-io/wagmi";
 import { createConfig } from "@privy-io/wagmi";
 import { http } from "wagmi";
-import { avalancheFuji } from "viem/chains";
+import { base } from "viem/chains";
+import { SUPPORTED_CHAINS, DEFAULT_CHAIN } from "./config/networks";
 
-// Create wagmi config with Privy
+// RPC URLs from environment variables
+const baseRpcUrl = import.meta.env.VITE_BASE_RPC || "https://mainnet.base.org";
+
+// Create wagmi config with Privy - supports Base Mainnet only
 const config = createConfig({
-  chains: [avalancheFuji],
+  chains: SUPPORTED_CHAINS,
   transports: {
-    [avalancheFuji.id]: http(import.meta.env.VITE_AVALANCHE_FUJI_RPC),
+    [base.id]: http(baseRpcUrl),
   },
 });
 
@@ -30,8 +34,8 @@ const queryClient = new QueryClient({
 // Privy configuration
 const privyConfig = {
   // Supported chains for this app
-  supportedChains: [avalancheFuji],
-  defaultChain: avalancheFuji,
+  supportedChains: SUPPORTED_CHAINS,
+  defaultChain: DEFAULT_CHAIN,
   // Wallet configuration
   embeddedWallets: {
     createOnLogin: "users-without-wallets",
