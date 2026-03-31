@@ -64,105 +64,114 @@ export function useStocks() {
       const stockCount = Number(stockId);
       const stockList = [];
 
+      // Batch 1: Fetch all stock info via multicall
+      const stockInfoCalls = [];
       for (let i = 0; i < stockCount; i++) {
-        try {
-          const stockInfo = await publicClient.readContract({
-            address: CONTRACTS.StockRegistry,
-            abi: ABIS.StockRegistry,
-            functionName: "getStockInfo",
-            args: [BigInt(i)],
-          });
+        stockInfoCalls.push({
+          address: CONTRACTS.StockRegistry,
+          abi: ABIS.StockRegistry,
+          functionName: "getStockInfo",
+          args: [BigInt(i)],
+        });
+      }
 
-          // Get token decimals and total supply
-          let totalSupply = "0";
-          let decimals = 18;
-          try {
-            const [supply, tokenDecimals] = await Promise.all([
-              publicClient.readContract({
-                address: stockInfo.stock,
-                abi: ABIS.ERC20,
-                functionName: "totalSupply",
-              }),
-              publicClient.readContract({
-                address: stockInfo.stock,
-                abi: ABIS.ERC20,
-                functionName: "decimals",
-              }),
-            ]);
-            totalSupply = (
-              Number(supply) / Math.pow(10, tokenDecimals)
-            ).toString();
-            decimals = Number(tokenDecimals);
-          } catch (err) {
-            console.warn(`Failed to get token info for stock ${i}:`, err);
-          }
+      const stockInfoResults = stockCount > 0
+        ? await publicClient.multicall({
+            contracts: stockInfoCalls,
+            allowFailure: true,
+          })
+        : [];
 
-          // Fetch price from StockMarket contract getStockOracleInfo
-          let price = "0";
-          let lastUpdateTime = 0;
-          try {
-            const priceInfo = await publicClient.readContract({
-              address: CONTRACTS.StockMarket,
-              abi: ABIS.StockMarket,
-              functionName: "getStockOracleInfo",
-              args: [i],
-            });
-            price = priceInfo.price.toString();
-            lastUpdateTime = Number(priceInfo.lastUpdateTime);
-          } catch (err) {
-            console.warn(`Failed to get price from contract for stock ${i}:`, err);
-            price = "0";
-            lastUpdateTime = 0;
-          }
-
-          // Get reserve info from Validator
-          let reserve = "0";
-          let reserveState = 0;
-          let reserveUpdateTime = 0;
-          try {
-            const reserveInfo = await publicClient.readContract({
-              address: CONTRACTS.Validator,
-              abi: ABIS.Validator,
-              functionName: "getReserveInfo",
-              args: [BigInt(i)],
-            });
-            reserveState = Number(reserveInfo.state);
-            reserveUpdateTime = Number(reserveInfo.updateTime);
-            const collateralDecimals = await publicClient.readContract({
-              address: stockInfo.collateral,
-              abi: ABIS.ERC20,
-              functionName: "decimals",
-            });
-            reserve = (Number(reserveInfo.latestReserve) / Math.pow(10, collateralDecimals)).toString();
-          } catch (err) {
-            console.warn(`Failed to get reserve for stock ${i}:`, err);
-          }
-
-          stockList.push({
-            id: i,
-            name: stockInfo.name,
-            symbol: stockInfo.symbol,
-            state: Number(stockInfo.state),
-            stockType: Number(stockInfo.stockType),
-            stock: stockInfo.stock,
-            stockFundPool: stockInfo.stockFundPool,
-            collateral: stockInfo.collateral,
-            oracle: stockInfo.oracle,
-            curator: stockInfo.curator,
-            proof: stockInfo.proof,
-            priceUri: stockInfo.priceUri,
-            describe: stockInfo.describe,
-            totalSupply,
-            decimals,
-            price,
-            reserve,
-            reserveState,
-            reserveUpdateTime,
-            lastUpdateTime,
-          });
-        } catch (err) {
-          console.error(`Failed to load stock ${i}:`, err);
+      // Batch 2: Fetch supplementary data for all stocks via multicall
+      const supplementaryCalls = [];
+      for (let i = 0; i < stockCount; i++) {
+        const info = stockInfoResults[i];
+        if (info.status === "success" && info.result) {
+          supplementaryCalls.push(
+            { address: info.result.stock, abi: ABIS.ERC20, functionName: "totalSupply" },
+            { address: info.result.stock, abi: ABIS.ERC20, functionName: "decimals" },
+            { address: CONTRACTS.StockMarket, abi: ABIS.StockMarket, functionName: "getStockOracleInfo", args: [i] },
+            { address: CONTRACTS.Validator, abi: ABIS.Validator, functionName: "getReserveInfo", args: [BigInt(i)] },
+            { address: info.result.collateral, abi: ABIS.ERC20, functionName: "decimals" }
+          );
         }
+      }
+
+      const supplementaryResults = supplementaryCalls.length > 0
+        ? await publicClient.multicall({
+            contracts: supplementaryCalls,
+            allowFailure: true,
+          })
+        : [];
+
+      let callIndex = 0;
+      for (let i = 0; i < stockCount; i++) {
+        const info = stockInfoResults[i];
+        if (info.status !== "success" || !info.result) {
+          console.error(`Failed to load stock ${i}:`, info.error);
+          continue;
+        }
+
+        const stockInfo = info.result;
+
+        let totalSupply = "0";
+        let decimals = 18;
+        let price = "0";
+        let lastUpdateTime = 0;
+        let reserve = "0";
+        let reserveState = 0;
+        let reserveUpdateTime = 0;
+
+        const totalSupplyRes = supplementaryResults[callIndex++];
+        const decimalsRes = supplementaryResults[callIndex++];
+        const priceInfoRes = supplementaryResults[callIndex++];
+        const reserveInfoRes = supplementaryResults[callIndex++];
+        const collateralDecimalsRes = supplementaryResults[callIndex++];
+
+        if (totalSupplyRes?.status === "success" && decimalsRes?.status === "success") {
+          totalSupply = (Number(totalSupplyRes.result) / Math.pow(10, Number(decimalsRes.result))).toString();
+          decimals = Number(decimalsRes.result);
+        } else {
+          console.warn(`Failed to get token info for stock ${i}`);
+        }
+
+        if (priceInfoRes?.status === "success") {
+          price = priceInfoRes.result.price.toString();
+          lastUpdateTime = Number(priceInfoRes.result.lastUpdateTime);
+        } else {
+          console.warn(`Failed to get price from contract for stock ${i}`);
+        }
+
+        if (reserveInfoRes?.status === "success" && collateralDecimalsRes?.status === "success") {
+          reserveState = Number(reserveInfoRes.result.state);
+          reserveUpdateTime = Number(reserveInfoRes.result.updateTime);
+          reserve = (Number(reserveInfoRes.result.latestReserve) / Math.pow(10, Number(collateralDecimalsRes.result))).toString();
+        } else {
+          console.warn(`Failed to get reserve for stock ${i}`);
+        }
+
+        stockList.push({
+          id: i,
+          name: stockInfo.name,
+          symbol: stockInfo.symbol,
+          state: Number(stockInfo.state),
+          stockType: Number(stockInfo.stockType),
+          stock: stockInfo.stock,
+          stockFundPool: stockInfo.stockFundPool,
+          collateral: stockInfo.collateral,
+          oracle: stockInfo.oracle,
+          curator: stockInfo.curator,
+          proof: stockInfo.proof,
+          priceUri: stockInfo.priceUri,
+          describe: stockInfo.describe,
+          totalSupply,
+          decimals,
+          price,
+          reserve,
+          reserveState,
+          reserveUpdateTime,
+          lastUpdateTime,
+        });
       }
 
       stockList.sort((a, b) => b.id - a.id);
@@ -241,75 +250,62 @@ export function useStock(stockId) {
         setIsLoading(true);
         setError(null);
 
-        const stockInfo = await publicClient.readContract({
-          address: CONTRACTS.StockRegistry,
-          abi: ABIS.StockRegistry,
-          functionName: "getStockInfo",
-          args: [BigInt(stockId)],
+        const stockInfoRes = await publicClient.multicall({
+          contracts: [
+            {
+              address: CONTRACTS.StockRegistry,
+              abi: ABIS.StockRegistry,
+              functionName: "getStockInfo",
+              args: [BigInt(stockId)],
+            },
+          ],
+          allowFailure: true,
+        });
+
+        if (stockInfoRes[0].status !== "success") {
+          throw new Error("Failed to get stock info");
+        }
+
+        const stockInfo = stockInfoRes[0].result;
+
+        const supplementaryRes = await publicClient.multicall({
+          contracts: [
+            { address: stockInfo.stock, abi: ABIS.ERC20, functionName: "totalSupply" },
+            { address: stockInfo.stock, abi: ABIS.ERC20, functionName: "decimals" },
+            { address: CONTRACTS.StockMarket, abi: ABIS.StockMarket, functionName: "getStockOracleInfo", args: [stockId] },
+            { address: CONTRACTS.Validator, abi: ABIS.Validator, functionName: "getReserveInfo", args: [BigInt(stockId)] },
+            { address: stockInfo.collateral, abi: ABIS.ERC20, functionName: "decimals" },
+          ],
+          allowFailure: true,
         });
 
         let totalSupply = "0";
         let decimals = 18;
-        try {
-          const [supply, tokenDecimals] = await Promise.all([
-            publicClient.readContract({
-              address: stockInfo.stock,
-              abi: ABIS.ERC20,
-              functionName: "totalSupply",
-            }),
-            publicClient.readContract({
-              address: stockInfo.stock,
-              abi: ABIS.ERC20,
-              functionName: "decimals",
-            }),
-          ]);
-          totalSupply = (
-            Number(supply) / Math.pow(10, tokenDecimals)
-          ).toString();
-          decimals = Number(tokenDecimals);
-        } catch (err) {
-          console.warn("Failed to get token info:", err);
+        if (supplementaryRes[0].status === "success" && supplementaryRes[1].status === "success") {
+          totalSupply = (Number(supplementaryRes[0].result) / Math.pow(10, Number(supplementaryRes[1].result))).toString();
+          decimals = Number(supplementaryRes[1].result);
+        } else {
+          console.warn("Failed to get token info");
         }
 
-        // Fetch price from StockMarket contract getStockOracleInfo
         let price = "0";
         let lastUpdateTime = 0;
-        try {
-          const priceInfo = await publicClient.readContract({
-            address: CONTRACTS.StockMarket,
-            abi: ABIS.StockMarket,
-            functionName: "getStockOracleInfo",
-            args: [stockId],
-          });
-          price = priceInfo.price.toString();
-          lastUpdateTime = Number(priceInfo.lastUpdateTime);
-        } catch (err) {
-          console.warn(`Failed to get price from contract for stock ${stockId}:`, err);
-          price = "0";
-          lastUpdateTime = 0;
+        if (supplementaryRes[2].status === "success") {
+          price = supplementaryRes[2].result.price.toString();
+          lastUpdateTime = Number(supplementaryRes[2].result.lastUpdateTime);
+        } else {
+          console.warn(`Failed to get price from contract for stock ${stockId}`);
         }
 
-        // Get reserve info from Validator
         let reserve = "0";
         let reserveState = 0;
         let reserveUpdateTime = 0;
-        try {
-          const reserveInfo = await publicClient.readContract({
-            address: CONTRACTS.Validator,
-            abi: ABIS.Validator,
-            functionName: "getReserveInfo",
-            args: [BigInt(stockId)],
-          });
-          reserveState = Number(reserveInfo.state);
-          reserveUpdateTime = Number(reserveInfo.updateTime);
-          const collateralDecimals = await publicClient.readContract({
-            address: stockInfo.collateral,
-            abi: ABIS.ERC20,
-            functionName: "decimals",
-          });
-          reserve = (Number(reserveInfo.latestReserve) / Math.pow(10, collateralDecimals)).toString();
-        } catch (err) {
-          console.warn("Failed to get reserve:", err);
+        if (supplementaryRes[3].status === "success" && supplementaryRes[4].status === "success") {
+          reserveState = Number(supplementaryRes[3].result.state);
+          reserveUpdateTime = Number(supplementaryRes[3].result.updateTime);
+          reserve = (Number(supplementaryRes[3].result.latestReserve) / Math.pow(10, Number(supplementaryRes[4].result))).toString();
+        } else {
+          console.warn("Failed to get reserve");
         }
 
         setStock({

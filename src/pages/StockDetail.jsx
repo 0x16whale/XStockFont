@@ -342,20 +342,32 @@ export default function StockDetail({ stock, onBack, onTransactionSuccess }) {
         86400,
       );
 
-      // Get Pyth fee
-      const pythFee = await publicClient.readContract({
-        address: CONTRACTS.StockStreamsOracle,
-        abi: ABIS.StockStreamsOracle,
-        functionName: "getUpdatePriceFee",
-        args: [updateData],
+      const [pythFeeRes, collateralDecimalsRes] = await publicClient.multicall({
+        contracts: [
+          {
+            address: CONTRACTS.StockStreamsOracle,
+            abi: ABIS.StockStreamsOracle,
+            functionName: "getUpdatePriceFee",
+            args: [updateData],
+          },
+          {
+            address: displayStock.collateral,
+            abi: ABIS.ERC20,
+            functionName: "decimals",
+          },
+        ],
+        allowFailure: true,
       });
 
-      const collateralDecimals = await publicClient.readContract({
-        address: displayStock.collateral,
-        abi: ABIS.ERC20,
-        functionName: "decimals",
-        args: [],
-      });
+      if (pythFeeRes.status !== "success") {
+        throw new Error("Failed to get Pyth fee");
+      }
+      const pythFee = pythFeeRes.result;
+
+      if (collateralDecimalsRes.status !== "success") {
+        throw new Error("Failed to get collateral decimals");
+      }
+      const collateralDecimals = collateralDecimalsRes.result;
       console.log("collateralDecimals:", collateralDecimals);
 
       const value = parseUnits(mintAmount, collateralDecimals);
@@ -424,29 +436,54 @@ export default function StockDetail({ stock, onBack, onTransactionSuccess }) {
       const deadline = timestamp + 10000; // 10 seconds from now
 
       // Get signer nonce for Other stocks
-      const currentNonce = await publicClient.readContract({
-        address: CONTRACTS.StockMarket,
-        abi: ABIS.StockMarket,
-        functionName: "signerNonce",
-        args: [address],
+      const [nonceRes] = await publicClient.multicall({
+        contracts: [
+          {
+            address: CONTRACTS.StockMarket,
+            abi: ABIS.StockMarket,
+            functionName: "signerNonce",
+            args: [address],
+          },
+        ],
+        allowFailure: true,
       });
+
+      if (nonceRes.status !== "success") {
+        throw new Error("Failed to get signer nonce");
+      }
+      const currentNonce = nonceRes.result;
 
       // Get pack data for signing
       const functionSelector = getIssueOtherSelector();
 
-      const packData = await publicClient.readContract({
-        address: CONTRACTS.StockMarket,
-        abi: ABIS.StockMarket,
-        functionName: "packData",
-        args: [
-          BigInt(displayStock.id),
-          BigInt(deadline),
-          BigInt(displayStock.price || 0),
-          functionSelector,
-          address,
-          currentNonce,
+      const [packDataRes, collateralDecimalsRes] = await publicClient.multicall({
+        contracts: [
+          {
+            address: CONTRACTS.StockMarket,
+            abi: ABIS.StockMarket,
+            functionName: "packData",
+            args: [
+              BigInt(displayStock.id),
+              BigInt(deadline),
+              BigInt(displayStock.price || 0),
+              functionSelector,
+              address,
+              currentNonce,
+            ],
+          },
+          {
+            address: displayStock.collateral,
+            abi: ABIS.ERC20,
+            functionName: "decimals",
+          },
         ],
+        allowFailure: true,
       });
+
+      if (packDataRes.status !== "success") {
+        throw new Error("Failed to pack data");
+      }
+      const packData = packDataRes.result;
 
       // Request signature from user
       let signature;
@@ -459,12 +496,10 @@ export default function StockDetail({ stock, onBack, onTransactionSuccess }) {
         throw new Error("Signature rejected by user");
       }
 
-      const collateralDecimals = await publicClient.readContract({
-        address: displayStock.collateral,
-        abi: ABIS.ERC20,
-        functionName: "decimals",
-        args: [],
-      });
+      if (collateralDecimalsRes.status !== "success") {
+        throw new Error("Failed to get collateral decimals");
+      }
+      const collateralDecimals = collateralDecimalsRes.result;
       console.log("collateralDecimals:", collateralDecimals);
 
       const value = parseUnits(mintAmount, collateralDecimals);
@@ -792,42 +827,67 @@ export default function StockDetail({ stock, onBack, onTransactionSuccess }) {
         return;
       }
       try {
+        const [decimalsRes] = await publicClient.multicall({
+          contracts: [
+            {
+              address: displayStock.collateral,
+              abi: ABIS.ERC20,
+              functionName: "decimals",
+            },
+          ],
+          allowFailure: true,
+        });
+
+        if (decimalsRes.status !== "success") {
+          throw new Error("Failed to get collateral decimals");
+        }
+        const collateralDecimals = decimalsRes.result;
+        const collateralAmount = parseUnits(mintAmount, collateralDecimals);
+
         if (isMain) {
           // Main stock: use getIssueAmount
-          const collateralDecimals = await publicClient.readContract({
-            address: displayStock.collateral,
-            abi: ABIS.ERC20,
-            functionName: "decimals",
+          const [amountRes] = await publicClient.multicall({
+            contracts: [
+              {
+                address: CONTRACTS.StockMarket,
+                abi: ABIS.StockMarket,
+                functionName: "getIssueAmount",
+                args: [BigInt(displayStock.id), collateralAmount],
+              },
+            ],
+            allowFailure: true,
           });
-          const collateralAmount = parseUnits(mintAmount, collateralDecimals);
-          const amount = await publicClient.readContract({
-            address: CONTRACTS.StockMarket,
-            abi: ABIS.StockMarket,
-            functionName: "getIssueAmount",
-            args: [BigInt(displayStock.id), collateralAmount],
-          });
-          setEstimatedTokens(formatUnits(amount, displayStock.decimals || 18));
+
+          if (amountRes.status === "success") {
+            setEstimatedTokens(formatUnits(amountRes.result, displayStock.decimals || 18));
+          } else {
+            setEstimatedTokens("0");
+          }
         } else {
           // Other stock: use getIssueOtherStockAmount with spot=1000 (10%)
-          const collateralDecimals = await publicClient.readContract({
-            address: displayStock.collateral,
-            abi: ABIS.ERC20,
-            functionName: "decimals",
-          });
-          const collateralAmount = parseUnits(mintAmount, collateralDecimals);
           const latestPrice = BigInt(displayStock.price || 0);
-          const amount = await publicClient.readContract({
-            address: CONTRACTS.StockMarket,
-            abi: ABIS.StockMarket,
-            functionName: "getIssueOtherStockAmount",
-            args: [
-              1000,
-              BigInt(displayStock.id),
-              latestPrice,
-              collateralAmount,
+          const [amountRes] = await publicClient.multicall({
+            contracts: [
+              {
+                address: CONTRACTS.StockMarket,
+                abi: ABIS.StockMarket,
+                functionName: "getIssueOtherStockAmount",
+                args: [
+                  1000,
+                  BigInt(displayStock.id),
+                  latestPrice,
+                  collateralAmount,
+                ],
+              },
             ],
+            allowFailure: true,
           });
-          setEstimatedTokens(formatUnits(amount, displayStock.decimals || 18));
+
+          if (amountRes.status === "success") {
+            setEstimatedTokens(formatUnits(amountRes.result, displayStock.decimals || 18));
+          } else {
+            setEstimatedTokens("0");
+          }
         }
       } catch (err) {
         console.error("Failed to get estimated tokens:", err);
